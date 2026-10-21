@@ -176,13 +176,7 @@ scripts/run.sh          セットアップ済みなら、これだけで起動
 
 ## ロードマップ
 
-今の境界を壊さずに足す順です。
-
-1. **デスクトップ操作。** `Tool` と `Risk.EXTERNAL` はすでに確認ゲートへつながっています。画面全体のクリックやキー入力は、そのリスクで新しいツールとして足します。ブラウザのページ操作とはセッションを分けます。
-2. **定期実行。** 同じ `run_agent` を、保存したプロンプトと cron またはスケジューラから呼びます。結果は通常の会話として残します。
-3. **コネクタ。** カレンダー、メール、GitHub。外へ出る操作は `Risk.EXTERNAL` にして、必ず確認を通します。
-4. **マルチユーザー。** 認証、会話の所有者、ブラウザセッションの分離、SQLite から Postgres、`YATA_ALLOW_PRIVATE_URLS=false` を既定にする、秘密の保管。URL 検査はリクエスト直前の名前解決なので、公開時はリダイレクトと DNS 再バインドの見直しもここです。
-5. **記憶の検索と、トークン単位のストリーミング。** 事実が増えたら埋め込みで引く。回答本文は、ツールが無い最終ターンから順にトークン配信へ移します。
+先の計画は [ROADMAP.md](ROADMAP.md) に分けてあります。いまの版は Phase 0（土台）です。次に着手するのは、ブラウザを閉じていても動く常駐とルーティンです。Grok Bot、Meta Muse、OpenAI Dots と同じ種類の個人エージェントへ向かう段階、各段階の成功条件、当面やらないこともそこに書いてあります。
 
 ## English
 
@@ -211,4 +205,4 @@ Search uses DuckDuckGo via `ddgs` (no key). Page reading checks every redirect. 
 
 ### Roadmap
 
-Desktop control on `Risk.EXTERNAL`, scheduled routines that call the same loop, connectors for calendar and mail and GitHub, then multi-user deployment (auth, session isolation, Postgres, private URLs off). Token streaming and retrieved memory come after the tool loop, which is already the core.
+The longer plan is in [ROADMAP.md](ROADMAP.md). This repository is Phase 0. The recommended next step is an always-on process and scheduled routines, on the way toward a Grok Bot, Meta Muse, and OpenAI Dots class of personal agent.
