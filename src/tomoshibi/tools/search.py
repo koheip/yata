@@ -14,17 +14,24 @@ from tomoshibi.tools.base import Tool, ToolContext, ToolResult, clip_text
 SearchFn = Callable[[str, int], list[dict[str, Any]]]
 
 
-def ddg_search(query: str, max_results: int) -> list[dict[str, Any]]:
+def _ddg_text(query: str, max_results: int, region: str | None) -> list[dict[str, Any]]:
     from ddgs import DDGS
 
-    client = DDGS()
+    kwargs: dict[str, Any] = {"max_results": max_results}
+    if region:
+        kwargs["region"] = region
     try:
-        results = list(client.text(query, region="jp-jp", max_results=max_results) or [])
+        return list(DDGS().text(query, **kwargs) or [])
     except Exception:
-        results = []
+        return []
+
+
+def ddg_search(query: str, max_results: int) -> list[dict[str, Any]]:
+    """Search DuckDuckGo. An empty result is success; the tool tells the model that."""
+    results = _ddg_text(query, max_results, "jp-jp")
     if results:
         return results
-    return list(client.text(query, max_results=max_results) or [])
+    return _ddg_text(query, max_results, None)
 
 
 def format_search_results(results: list[dict[str, Any]]) -> str:

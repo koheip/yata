@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { SUGGESTIONS, summarizeArguments, toolLabel } from "../labels"
@@ -10,6 +11,11 @@ type TranscriptProps = {
 }
 
 export function Transcript({ messages, streaming, onSuggest }: TranscriptProps) {
+  const endRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ block: "end" })
+  }, [messages, streaming])
+
   if (messages.length === 0) {
     return (
       <div className="mx-auto flex min-h-full max-w-2xl flex-col justify-center px-4 py-16">
@@ -44,6 +50,7 @@ export function Transcript({ messages, streaming, onSuggest }: TranscriptProps) 
           <AssistantMessage key={message.id} message={message} live={live} />
         )
       })}
+      <div ref={endRef} />
     </div>
   )
 }
