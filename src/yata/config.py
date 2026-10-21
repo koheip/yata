@@ -37,6 +37,11 @@ class Settings(BaseSettings):
     yata_anthropic_model: str = "claude-sonnet-4-5"
     yata_ollama_model: str = "gemma3:4b"
 
+    yata_scheduler_enabled: bool = True
+    yata_scheduler_interval_seconds: int = Field(default=30, ge=5, le=3600)
+    yata_timezone: str = "Asia/Tokyo"
+    yata_routine_confirm_timeout: float = Field(default=86_400, ge=1, le=604_800)
+
     def database_path(self) -> Path:
         return Path(self.yata_db)
 

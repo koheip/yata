@@ -1,4 +1,4 @@
-import type { ChatMessage, Conversation, Fact, ModelInfo, ServerEvent } from "./types"
+import type { ChatMessage, Conversation, Fact, ModelInfo, Routine, RoutinePreset, ServerEvent } from "./types"
 
 async function errorMessage(response: Response): Promise<string> {
   try {
@@ -47,6 +47,37 @@ export function listFacts() {
 
 export function deleteFact(key: string) {
   return request<void>(`/api/facts/${encodeURIComponent(key)}`, { method: "DELETE" })
+}
+
+export function listRoutines() {
+  return request<{ presets: RoutinePreset[]; routines: Routine[] }>("/api/routines")
+}
+
+export function createRoutine(body: {
+  name: string
+  prompt: string
+  preset?: string
+  schedule?: string
+  schedule_kind?: string
+  model_id?: string
+}) {
+  return request<Routine>("/api/routines", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  })
+}
+
+export function pauseRoutine(id: string) {
+  return request<Routine>(`/api/routines/${id}/pause`, { method: "POST" })
+}
+
+export function resumeRoutine(id: string) {
+  return request<Routine>(`/api/routines/${id}/resume`, { method: "POST" })
+}
+
+export function deleteRoutine(id: string) {
+  return request<void>(`/api/routines/${id}`, { method: "DELETE" })
 }
 
 export function resolveConfirmation(requestId: string, approved: boolean) {

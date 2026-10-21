@@ -1,16 +1,37 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import {
   createConversation,
+  createRoutine,
   deleteConversation,
   deleteFact,
+  deleteRoutine,
   fetchModels,
   getConversation,
   listConversations,
   listFacts,
+  listRoutines,
+  pauseRoutine,
   resolveConfirmation,
+  resumeRoutine,
   streamMessage,
 } from "./api"
-import type { ChatMessage, ConfirmRequest, Conversation, Fact, ModelInfo, ServerEvent, Step, ToolStep } from "./types"
+import type {
+  ChatMessage,
+  ConfirmRequest,
+  Conversation,
+  Fact,
+  ModelInfo,
+  Routine,
+  RoutinePreset,
+  ServerEvent,
+  Step,
+  ToolStep,
+} from "./types"
+
+function looksLikeRoutine(text: string): boolean {
+  const normalized = text.trim().replace(/[０-９]/g, (digit) => String.fromCharCode(digit.charCodeAt(0) - 0xfee0))
+  return /^(?:ルーティン[:：]\s*)?(?:毎朝\s*\d{1,2}\s*時|毎週\s*月曜(?:日)?\s*\d{1,2}\s*時|毎時|1時間ごと)/.test(normalized)
+}
 
 function asRecord(value: unknown): Record<string, unknown> {
   if (value && typeof value === "object" && !Array.isArray(value)) {
@@ -26,6 +47,8 @@ export function useAssistant() {
   const [activeId, setActiveId] = useState<string | null>(null)
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [facts, setFacts] = useState<Fact[]>([])
+  const [routines, setRoutines] = useState<Routine[]>([])
+  const [presets, setPresets] = useState<RoutinePreset[]>([])
   const [draft, setDraft] = useState("")
   const [streaming, setStreaming] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -35,14 +58,72 @@ export function useAssistant() {
   const [pendingDelete, setPendingDelete] = useState<Conversation | null>(null)
   const confirmResolver = useRef<((approved: boolean) => void) | null>(null)
   const sendingRef = useRef(false)
+  const surfacedConfirms = useRef(new Set<string>())
+  const activeIdRef = useRef<string | null>(null)
+  const streamingRef = useRef(false)
+  const seenRuns = useRef<Record<string, string | null>>({})
 
   const selected = models.find((model) => model.id === modelId) ?? null
+  activeIdRef.current = activeId
+  streamingRef.current = streaming
 
   const refreshLists = useCallback(async () => {
-    const [conversationData, factData] = await Promise.all([listConversations(), listFacts()])
+    const [conversationData, factData, routineData] = await Promise.all([
+      listConversations(),
+      listFacts(),
+      listRoutines(),
+    ])
     setConversations(conversationData.conversations)
     setFacts(factData.facts)
+    setRoutines(routineData.routines)
+    setPresets(routineData.presets)
+    const pending = routineData.routines.find((item) => item.pending_confirmation)?.pending_confirmation
+    if (pending && !surfacedConfirms.current.has(pending.request_id) && !confirmResolver.current) {
+      surfacedConfirms.current.add(pending.request_id)
+      setConfirm({
+        requestId: pending.request_id,
+        tool: pending.tool,
+        risk: pending.risk,
+        summary: pending.summary,
+        arguments: pending.arguments,
+      })
+      confirmResolver.current = (approved: boolean) => {
+        void resolveConfirmation(pending.request_id, approved).finally(() => {
+          void refreshLists()
+        })
+      }
+    }
+    for (const routine of routineData.routines) {
+      const previous = seenRuns.current[routine.id]
+      seenRuns.current[routine.id] = routine.last_run
+      if (
+        previous !== undefined &&
+        previous !== routine.last_run &&
+        routine.conversation_id === activeIdRef.current &&
+        !streamingRef.current
+      ) {
+        const detail = await getConversation(routine.conversation_id)
+        setActiveId(detail.id)
+        setMessages(detail.messages)
+      }
+    }
   }, [])
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      void refreshLists().catch(() => {
+        // A missed poll should not cover the transcript with an error.
+      })
+    }, 15000)
+    const onFocus = () => {
+      void refreshLists().catch(() => {})
+    }
+    window.addEventListener("focus", onFocus)
+    return () => {
+      window.clearInterval(timer)
+      window.removeEventListener("focus", onFocus)
+    }
+  }, [refreshLists])
 
   useEffect(() => {
     let cancelled = false
@@ -171,7 +252,7 @@ export function useAssistant() {
   async function send(text?: string) {
     const content = (text ?? draft).trim()
     if (!content || streaming || sendingRef.current) return
-    if (selected && !selected.ready) {
+    if (selected && !selected.ready && !looksLikeRoutine(content)) {
       setError(selected.note ?? "このモデルはまだ使えません。")
       return
     }
@@ -228,6 +309,22 @@ export function useAssistant() {
     setFacts((current) => current.filter((fact) => fact.key !== key))
   }
 
+  async function addRoutine(input: { name: string; prompt: string; preset?: string; schedule?: string }) {
+    await createRoutine({ ...input, model_id: modelId })
+    await refreshLists()
+  }
+
+  async function toggleRoutine(routine: Routine) {
+    if (routine.enabled) await pauseRoutine(routine.id)
+    else await resumeRoutine(routine.id)
+    await refreshLists()
+  }
+
+  async function removeRoutine(routine: Routine) {
+    await deleteRoutine(routine.id)
+    await refreshLists()
+  }
+
   return {
     models,
     modelId,
@@ -237,6 +334,8 @@ export function useAssistant() {
     activeId,
     messages,
     facts,
+    routines,
+    presets,
     draft,
     setDraft,
     streaming,
@@ -253,5 +352,8 @@ export function useAssistant() {
     send,
     removeConversation,
     removeFact,
+    addRoutine,
+    toggleRoutine,
+    removeRoutine,
   }
 }

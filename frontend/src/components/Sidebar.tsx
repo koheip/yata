@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
 import { cn } from "cn"
-import type { Conversation, Fact } from "../types"
+import { RoutinesSection } from "./Routines"
+import type { Conversation, Fact, Routine, RoutinePreset } from "../types"
 
 type SidebarProps = {
   conversations: Conversation[]
@@ -16,6 +17,11 @@ type SidebarProps = {
   onNew: () => void
   onDelete: (conversation: Conversation) => void
   onDeleteFact: (key: string) => void
+  routines: Routine[]
+  presets: RoutinePreset[]
+  onCreateRoutine: (input: { name: string; prompt: string; preset?: string; schedule?: string }) => Promise<void>
+  onToggleRoutine: (routine: Routine) => Promise<void>
+  onDeleteRoutine: (routine: Routine) => Promise<void>
 }
 
 export function Sidebar({
@@ -28,6 +34,11 @@ export function Sidebar({
   onNew,
   onDelete,
   onDeleteFact,
+  routines,
+  presets,
+  onCreateRoutine,
+  onToggleRoutine,
+  onDeleteRoutine,
 }: SidebarProps) {
   return (
     <>
@@ -95,7 +106,16 @@ export function Sidebar({
           )}
         </ScrollArea>
         <Separator />
-        <div className="max-h-56 overflow-y-auto px-4 py-3">
+        <RoutinesSection
+          routines={routines}
+          presets={presets}
+          onCreate={onCreateRoutine}
+          onToggle={onToggleRoutine}
+          onDelete={onDeleteRoutine}
+          onOpen={(id) => onSelect(id)}
+        />
+        <Separator />
+        <div className="max-h-40 overflow-y-auto px-4 py-3">
           <div className="mb-2 flex items-center justify-between">
             <p className="text-xs font-medium tracking-wide text-muted-foreground">記憶</p>
             <Badge variant="secondary">{facts.length}</Badge>

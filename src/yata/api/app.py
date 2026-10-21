@@ -25,6 +25,15 @@ from yata.llm.router import ModelInfo, ModelRouter
 from yata.llm.types import LLMMessage, ProviderError
 from yata.memory.store import MemoryStore, to_transcript
 from yata.prompts import build_system_prompt
+from yata.routines.repository import Routine, RoutineRepository, RoutineRun
+from yata.routines.schedule import (
+    ScheduleError,
+    parse_routine_utterance,
+    preset_list,
+    schedule_label,
+)
+from yata.routines.scheduler import RoutineScheduler
+from yata.routines.service import RoutineService
 from yata.tools.base import ToolContextFactory
 from yata.tools.browser import BrowserSession
 from yata.tools.catalog import build_registry
@@ -53,6 +62,16 @@ class ResolveConfirmation(BaseModel):
     approved: bool
 
 
+class CreateRoutine(BaseModel):
+    name: str = Field(min_length=1, max_length=80)
+    prompt: str = Field(min_length=1, max_length=8000)
+    preset: str | None = None
+    schedule: str | None = Field(default=None, max_length=80)
+    schedule_kind: str | None = None
+    timezone: str | None = Field(default=None, max_length=64)
+    model_id: str | None = None
+
+
 def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or Settings()
     memory = MemoryStore(settings.database_path())
@@ -61,11 +80,36 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     registry = build_registry()
     model_router = ModelRouter(settings)
     artifacts = settings.artifacts_dir()
+    routine_repo = RoutineRepository(settings.database_path())
+    routines = RoutineService(
+        memory=memory,
+        routines=routine_repo,
+        router=model_router,
+        registry=registry,
+        gate=gate,
+        browser=browser,
+        artifacts_dir=artifacts,
+        allow_private_urls=settings.yata_allow_private_urls,
+        max_steps=settings.yata_max_steps,
+        confirm_timeout=settings.yata_routine_confirm_timeout,
+        default_timezone=settings.yata_timezone,
+    )
+    scheduler = (
+        RoutineScheduler(routines, settings.yata_scheduler_interval_seconds)
+        if settings.yata_scheduler_enabled
+        else None
+    )
 
     @asynccontextmanager
     async def lifespan(_: FastAPI):
-        yield
-        await browser.close()
+        if scheduler is not None:
+            await scheduler.start()
+        try:
+            yield
+        finally:
+            if scheduler is not None:
+                await scheduler.stop()
+            await browser.close()
 
     app = FastAPI(title="ヤタ Yata", version="0.1.0", lifespan=lifespan)
     app.add_middleware(
@@ -87,6 +131,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.registry = registry
     app.state.model_router = model_router
     app.state.artifacts = artifacts
+    app.state.routines = routines
 
     @app.get("/api/health")
     def health() -> dict[str, Any]:
@@ -152,6 +197,50 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         if not memory.delete_fact(key):
             raise HTTPException(status_code=404, detail="記憶が見つかりません。")
 
+    @app.get("/api/routines")
+    def list_routines() -> dict[str, Any]:
+        return {
+            "presets": preset_list(),
+            "routines": [_routine_dict(item, routine_repo) for item in routine_repo.list_routines()],
+        }
+
+    @app.post("/api/routines", status_code=201)
+    def create_routine(body: CreateRoutine) -> dict[str, Any]:
+        model_id = body.model_id or settings.yata_model
+        _known_model(model_router, model_id)
+        try:
+            routine = routines.create(
+                name=body.name,
+                prompt=body.prompt,
+                model_id=model_id,
+                preset=body.preset,
+                schedule=body.schedule,
+                schedule_kind=body.schedule_kind,
+                timezone=body.timezone,
+            )
+        except ScheduleError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        return _routine_dict(routine, routine_repo)
+
+    @app.post("/api/routines/{routine_id}/pause")
+    def pause_routine(routine_id: str) -> dict[str, Any]:
+        updated = routine_repo.set_enabled(routine_id, False)
+        if updated is None:
+            raise HTTPException(status_code=404, detail="ルーティンが見つかりません。")
+        return _routine_dict(updated, routine_repo)
+
+    @app.post("/api/routines/{routine_id}/resume")
+    def resume_routine(routine_id: str) -> dict[str, Any]:
+        updated = routine_repo.set_enabled(routine_id, True)
+        if updated is None:
+            raise HTTPException(status_code=404, detail="ルーティンが見つかりません。")
+        return _routine_dict(updated, routine_repo)
+
+    @app.delete("/api/routines/{routine_id}", status_code=204)
+    def delete_routine(routine_id: str) -> None:
+        if not routine_repo.delete(routine_id):
+            raise HTTPException(status_code=404, detail="ルーティンが見つかりません。")
+
     @app.post("/api/confirmations/{request_id}")
     def resolve_confirmation(request_id: str, body: ResolveConfirmation) -> dict[str, bool]:
         found = gate.resolve(request_id, body.approved)
@@ -165,6 +254,43 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         content = body.content.strip()
         if not content:
             raise HTTPException(status_code=400, detail="メッセージが空です。")
+        try:
+            draft = parse_routine_utterance(content, zone=settings.yata_timezone)
+        except ScheduleError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        if draft is not None:
+            model_id = body.model_id or conversation.model_id
+            _known_model(model_router, model_id)
+            try:
+                routine = routines.create(
+                    name=draft.name,
+                    prompt=draft.prompt,
+                    model_id=model_id,
+                    schedule=draft.schedule,
+                    schedule_kind=draft.schedule_kind,
+                    timezone=draft.timezone,
+                )
+            except ScheduleError as exc:
+                raise HTTPException(status_code=400, detail=str(exc)) from exc
+            label = schedule_label(routine.schedule_kind, routine.schedule, routine.timezone)
+            ack = (
+                f"ルーティン「{routine.name}」を登録しました。{label}に実行します。"
+                "ブラウザを閉じても、ヤタのプロセスが動いていれば結果はルーティンの会話に残ります。"
+            )
+            memory.maybe_title_from_first_message(conversation_id, content)
+            memory.add_message(conversation_id, LLMMessage(role="user", content=content))
+            memory.add_message(conversation_id, LLMMessage(role="assistant", content=ack))
+
+            async def generate_ack():
+                yield _sse({"type": "answer", "content": ack, "truncated": False})
+                yield _sse({"type": "done", "ok": True, "routine_id": routine.id})
+
+            return StreamingResponse(
+                generate_ack(),
+                media_type="text/event-stream",
+                headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+            )
+
         model_id = body.model_id or conversation.model_id
         visible = await _visible_models(model_router, settings)
         info = next((item for item in visible if item.id == model_id), None)
@@ -330,6 +456,51 @@ def _conversation_dict(conversation) -> dict[str, Any]:
         "model_id": conversation.model_id,
         "created_at": conversation.created_at,
         "updated_at": conversation.updated_at,
+    }
+
+
+def _routine_dict(routine: Routine, repo: RoutineRepository) -> dict[str, Any]:
+    latest = repo.latest_run(routine.id)
+    pending = latest if latest and latest.status == "waiting_confirmation" else None
+    return {
+        "id": routine.id,
+        "name": routine.name,
+        "prompt": routine.prompt,
+        "schedule_kind": routine.schedule_kind,
+        "schedule": routine.schedule,
+        "schedule_label": schedule_label(routine.schedule_kind, routine.schedule, routine.timezone),
+        "timezone": routine.timezone,
+        "enabled": routine.enabled,
+        "last_run": routine.last_run,
+        "next_run": routine.next_run,
+        "model_id": routine.model_id,
+        "conversation_id": routine.conversation_id,
+        "last_status": latest.status if latest else None,
+        "last_snippet": latest.snippet if latest else None,
+        "recent_runs": [_run_dict(item) for item in repo.recent_runs(routine.id)],
+        "pending_confirmation": _pending_dict(pending),
+    }
+
+
+def _run_dict(run: RoutineRun) -> dict[str, Any]:
+    return {
+        "id": run.id,
+        "status": run.status,
+        "snippet": run.snippet,
+        "started_at": run.started_at,
+        "finished_at": run.finished_at,
+    }
+
+
+def _pending_dict(run: RoutineRun | None) -> dict[str, Any] | None:
+    if run is None or not run.confirmation_id:
+        return None
+    return {
+        "request_id": run.confirmation_id,
+        "tool": run.confirmation_tool or "",
+        "risk": run.confirmation_risk or "",
+        "summary": run.confirmation_summary or run.snippet,
+        "arguments": run.confirmation_arguments or {},
     }
 
 

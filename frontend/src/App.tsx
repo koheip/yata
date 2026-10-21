@@ -24,6 +24,11 @@ export default function App() {
         onDeleteFact={(key) => {
           void assistant.removeFact(key)
         }}
+        routines={assistant.routines}
+        presets={assistant.presets}
+        onCreateRoutine={assistant.addRoutine}
+        onToggleRoutine={assistant.toggleRoutine}
+        onDeleteRoutine={assistant.removeRoutine}
       />
       <main className="flex min-w-0 flex-1 flex-col">
         <header className="flex items-center gap-3 border-b border-border px-3 py-3 md:px-5">

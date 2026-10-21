@@ -45,6 +45,48 @@ export type Fact = {
   updated_at: string
 }
 
+export type RoutinePreset = {
+  id: string
+  label: string
+  schedule: string
+  schedule_kind: string
+}
+
+export type RoutineConfirmation = {
+  request_id: string
+  tool: string
+  risk: string
+  summary: string
+  arguments: Record<string, unknown>
+}
+
+export type RoutineRun = {
+  id: string
+  status: string
+  snippet: string
+  started_at: string
+  finished_at: string | null
+}
+
+export type Routine = {
+  id: string
+  name: string
+  prompt: string
+  schedule_kind: string
+  schedule: string
+  schedule_label: string
+  timezone: string
+  enabled: boolean
+  last_run: string | null
+  next_run: string | null
+  model_id: string
+  conversation_id: string
+  last_status: string | null
+  last_snippet: string | null
+  recent_runs: RoutineRun[]
+  pending_confirmation: RoutineConfirmation | null
+}
+
 export type ServerEvent = {
   type: string
   [key: string]: unknown

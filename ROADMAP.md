@@ -17,7 +17,7 @@ Phase 0 として、ローカルで一通り動きます。`./scripts/run.sh` �
 - **日本語のチャット UI。** React。返信、ツールの途中経過、モデル選択、確認ダイアログ。
 - **テスト。** プロバイダ変換、ツール登録、モック LLM のループ、SQLite の記憶。`uv run pytest`。
 
-いま足りないものも、ここに書いておく。常駐プロセス、時刻で起きるルーティン、通知、Gmail やカレンダー、トレイアプリ、専用の仮想マシン、複数エージェント、ログインして人に配る仕組み。どれも未着手。
+サーバーのプロセスが動いているあいだのルーティンは入りました。まだないのは、ターミナルを閉じても残る Windows サービス、OS 通知、Gmail やカレンダー、トレイアプリ、専用の仮想マシン、複数エージェント、ログインして人に配る仕組みです。
 
 ## 目指す姿（共通の5本柱）
 
@@ -48,16 +48,11 @@ flowchart LR
 
 上の「いまあるもの」がこの段階です。ループ、モデルの差し替え、検索と読解、確認つきブラウザ、SQLite、日本語 UI、テスト。毎日の調べものに使え、コードを読めばどこにツールを足すかも分かります。ポートフォリオの最初の版として十分で、Grok Bot や Muse や Dots と比べる段階にはまだ早いです。
 
-### Phase 1 — 常駐とルーティン（次に着手推奨）
+### Phase 1 — 常駐とルーティン（スケジューラまで完了）
 
-最初に足すのは、ブラウザを閉じていても動くことです。チャットだけだと、案内役は人が画面を開いているときしか働きません。
+ブラウザを閉じても、ヤタのプロセスが動いていればルーティンは実行されます。SQLite に cron か間隔を保存し、FastAPI の中の APScheduler が同じ `run_agent` を呼び、結果をそのルーティンの会話に残します。確認が必要な操作は、誰も見ていないあいだ「確認待ち」になり、次に開いた画面で許可できます。チャットに「毎朝8時にニュースを要約して」と送っても登録できます。
 
-- チャットのリクエストから独立したワーカー。同じ `run_agent` を、保存したプロンプトで呼ぶ。
-- cron または間隔のルーティン。定義は SQLite に置く。結果は通常の会話として残す。
-- 戻ったときに分かる印。未読の結果がチャットに残る。OS の通知そのものは Phase 3 でよい。
-- 終了と起動。使っている PC では Windows サービス、またはトレイから開始と停止。開発機でも、ターミナルを閉じたら死ぬ、では足りない。
-
-ここが終わると、ヤタは「開いているあいだの道具」から「朝に結果が置いてある道具」に変わります。
+残しているのは、ターミナルを閉じてもプロセスが生きる Windows サービスと、OS の通知です。どちらも Phase 3 のトレイアプリと一緒に足します。それまでは `./scripts/run.sh` を起動したままにします。
 
 ### Phase 2 — コネクタ
 
@@ -119,7 +114,7 @@ flowchart LR
 | 段階 | できたと言えるとき |
 | --- | --- |
 | Phase 0（完了） | キー 1 つ、または demo で `./scripts/run.sh` が 8741 を開く。`uv run pytest` が通る。 |
-| Phase 1 | 「毎朝 8 時にニュース要約」が、ブラウザを開いていなくても時刻どおり会話に残る。ターミナルを閉じてもプロセスが生きている。 |
+| Phase 1（スケジューラまで完了） | サーバーが動いていれば、ブラウザを閉じても「毎朝 8 時にニュース要約」が会話に残る。ターミナルを閉じたあとも生かす Windows サービスは Phase 3。 |
 | Phase 2 | カレンダーの予定をチャットから読める。メールは下書きまで作り、確認で許可したときだけ送信される。 |
 | Phase 3 | ログイン時に起動し、ウィンドウを閉じてもトレイに残る。ルーティンの結果が OS の通知になる。 |
 | Phase 4 | 再起動してもブラウザのログインと作業ファイルが残る。所有者はその画面を見て、途中で止められる。 |
@@ -128,13 +123,13 @@ flowchart LR
 
 ## English
 
-Yata (ヤタ) is aimed at the same class of product as Grok Bot, Meta Muse, and OpenAI Dots: an always-on personal agent with its own computer. The name comes from Yatagarasu (八咫烏), the crow that showed Emperor Jimmu the way. This roadmap is for the owner, a student building it for daily use, a portfolio, and a later public product. Nothing below Phase 0 is implemented.
+Yata (ヤタ) is aimed at the same class of product as Grok Bot, Meta Muse, and OpenAI Dots: an always-on personal agent with its own computer. The name comes from Yatagarasu (八咫烏), the crow that showed Emperor Jimmu the way. This roadmap is for the owner, a student building it for daily use, a portfolio, and a later public product. Phase 0 and the in-process scheduler of Phase 1 are in place. A Windows service is not.
 
 ### What exists (Phase 0)
 
 A local agent loop with a step cap and server-sent tool steps. Pluggable Gemini, OpenAI, Claude, and an OpenAI-compatible endpoint such as Ollama, plus a keyless demo model. DuckDuckGo search, page fetch with a URL guard, and a Playwright browser whose clicks and typing wait on a confirmation dialog. SQLite conversations and short facts. A Japanese React chat. `./scripts/run.sh` serves the API and the UI on one port. Tests cover providers, the tool registry, the loop, and memory.
 
-Not built yet: a background worker, schedules, notifications, Gmail or calendar, a tray app, a persistent VM, specialist agents, skills, and accounts. `Risk.EXTERNAL` is reserved for mail, payments, and desktop control, and no tool uses it yet. The confirmation gate is in memory. The browser profile does not survive a restart. There is no token streaming and no retrieved long-term memory.
+Routines are stored in SQLite and run by an APScheduler tick inside the FastAPI process, including when the browser tab is closed. A run that needs confirmation stays `waiting_confirmation` until someone approves it. Not built yet: a Windows service or tray process, OS notifications, Gmail or calendar, a persistent VM, specialist agents, skills, and accounts. `Risk.EXTERNAL` is reserved for mail, payments, and desktop control, and no tool uses it yet. The confirmation gate is in memory. The browser profile does not survive a restart. There is no token streaming and no retrieved long-term memory.
 
 ### Five pillars
 
@@ -146,7 +141,7 @@ Not built yet: a background worker, schedules, notifications, Gmail or calendar,
 
 ### Phases
 
-Phase 1, next, is a background worker, cron or interval routines stored beside the chat, results left in a conversation, and start/stop as a Windows service or tray process. Success: saying "summarize the news at 8:00 every morning" still runs with the browser closed, and closing the terminal does not kill the process.
+Phase 1's scheduler is in. A routine such as "summarize the news at 8:00 every morning" runs while the server process is up, and the result is waiting in chat. Surviving a closed terminal, via a Windows service or tray app, remains part of Phase 3.
 
 Phase 2 adds Gmail and Google Calendar through OAuth. Tokens stay out of git. Outbound mail is a draft until the existing `Risk.EXTERNAL` gate is approved. Slack and LINE come after that. Success: calendar reads work from chat, and unapproved mail is never sent.
 

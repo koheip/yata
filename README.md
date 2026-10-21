@@ -125,6 +125,18 @@ LiteLLM のような単一ラッパーも候補でした。この版では公式
 
 ブラウザは会話ごとに1ページを持つヘッドレス Chromium です。セレクタは Playwright の記法（`text=次へ`、`role=button[name="検索"]`）です。
 
+### ルーティン
+
+ブラウザを閉じても、ヤタのプロセスが動いていれば、決めた時刻に同じエージェントループが動きます。結果はルーティン専用の会話に残り、次に開いたときに読めます。危険なツール（クリックや入力）は、誰も見ていないときは「確認待ち」になり、開いたときに許可か拒否を聞きます。
+
+サイドバーの「ルーティン」から追加できます。名前、指示、時刻（毎朝 8:00、毎時、毎週月曜 9:00、または cron）です。チャットに次のように送っても登録できます。
+
+```text
+毎朝8時にニュースを要約して
+```
+
+時刻は `YATA_TIMEZONE`（既定 `Asia/Tokyo`）です。サーバーは `./scripts/run.sh` のまま起動しておきます。ターミナルを閉じたあとも生かす Windows サービスや、OS の通知はまだありません。
+
 ### 記憶
 
 `conversations` と `messages` が LLM に渡す履歴です。画面用のトランスクリプトは、ツール呼び出しをそのターンの吹き出しに畳みます。`facts` は `save_memory` で書いた短い事実で、次のターンの system プロンプトに入ります。個人の規模なので SQLite の同期 API です。接続は呼び出しごとに開きます。
@@ -147,6 +159,9 @@ LiteLLM のような単一ラッパーも候補でした。この版では公式
 | `YATA_*_MODEL` | 上流のモデル名 |
 | `YATA_MAX_STEPS` | 1ターンのモデル呼び出し上限（既定 8） |
 | `YATA_ALLOW_PRIVATE_URLS` | プライベートアドレスを開くか |
+| `YATA_SCHEDULER_ENABLED` | ルーティンのスケジューラ（既定 `true`） |
+| `YATA_SCHEDULER_INTERVAL_SECONDS` | 期限の確認間隔（既定 30 秒） |
+| `YATA_TIMEZONE` | ルーティンの既定タイムゾーン（`Asia/Tokyo`） |
 
 ローカルモデルはツール呼び出しに対応したものを選んでください。`ollama pull gemma3` のように入れ、`YATA_OLLAMA_MODEL` をその名前に合わせます。
 
@@ -162,12 +177,13 @@ uv run pytest
 - ツール登録、重複、未知の名前、引数検査、確認ポリシー
 - モック LLM でのループ（直接回答、ツール後の回答、ステップ上限、確認の前後、拒否、未知ツール、例外、プロバイダエラー）
 - SQLite の会話、事実、画面用トランスクリプト
+- ルーティンの次回時刻、チャットからの登録、モック LLM での実行と確認待ち
 - デモモデルでの HTTP 一往復
 
 ## ディレクトリ
 
 ```
-src/yata/          エージェント、モデル、ツール、記憶、API
+src/yata/          エージェント、モデル、ツール、記憶、ルーティン、API
 frontend/               チャット UI
 tests/                  上記のテスト
 scripts/run.sh          セットアップ済みなら、これだけで起動
@@ -192,6 +208,8 @@ uv run playwright install chromium   # only for the browser tools
 ```
 
 The built-in `demo` model needs no key. It is there to exercise the real loop and the real tools, and it says so in the UI.
+
+Routines run inside the same process. Add one from the sidebar, or send `毎朝8時にニュースを要約して` in chat. The result is stored in that routine's conversation, so it is there the next time the tab opens. The server has to stay running; closing the browser tab is enough to leave. A Windows service and OS notifications are still later. Risky tools wait for confirmation instead of timing out immediately.
 
 ### Stack
 
