@@ -36,7 +36,7 @@ export function ConnectorsSection({ connectors, onConnect, onDisconnect }: Conne
               ) : null
             ) : connector.auth_kind === "token" && connector.status === "connected" ? (
               <p className="mt-1 text-xs text-muted-foreground">
-                API トークンで接続中（.env で変更）
+                API キーで接続中（.env で変更）
               </p>
             ) : (
               <div className="mt-1 flex gap-1">

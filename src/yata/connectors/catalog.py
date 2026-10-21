@@ -10,6 +10,7 @@ from yata.connectors.base import ConnectorRegistry
 from yata.connectors.chatwork import ChatworkConnector
 from yata.connectors.google import GmailConnector, GoogleCalendarConnector
 from yata.connectors.google_oauth import load_google_oauth_client
+from yata.connectors.rakuten import RakutenConnector
 from yata.connectors.token_store import TokenStore
 
 
@@ -20,4 +21,8 @@ def build_connector_registry(settings: Settings) -> ConnectorRegistry:
     registry.register(GmailConnector(client, tokens))
     registry.register(GoogleCalendarConnector(client, tokens))
     registry.register(ChatworkConnector(settings.chatwork_api_token))
+    registry.register(RakutenConnector(
+        settings.rakuten_application_id, settings.rakuten_access_key,
+        settings.rakuten_affiliate_id, settings.rakuten_origin,
+    ))
     return registry

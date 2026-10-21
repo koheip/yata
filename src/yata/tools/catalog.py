@@ -32,6 +32,7 @@ from yata.tools.gmail import (
     GmailSendEmailTool,
 )
 from yata.tools.memory_tool import SaveMemoryTool
+from yata.tools.rakuten import RakutenItemRankingTool, RakutenSearchItemsTool
 from yata.tools.registry import ToolRegistry
 from yata.tools.search import WebSearchTool
 
@@ -64,6 +65,8 @@ def build_registry(
     registry.register(ChatworkListMyTasksTool())
     registry.register(ChatworkSendMessageTool())
     registry.register(ChatworkCreateTaskTool())
+    registry.register(RakutenSearchItemsTool())
+    registry.register(RakutenItemRankingTool())
     return registry
 
 

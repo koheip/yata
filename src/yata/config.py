@@ -51,6 +51,12 @@ class Settings(BaseSettings):
     # Chatwork 連携。API トークンが未設定ならツールは提示されない。
     chatwork_api_token: str | None = None
 
+    # 楽天市場連携。アプリケーション ID とアクセスキーの両方が必要。
+    rakuten_application_id: str | None = None
+    rakuten_access_key: str | None = None
+    rakuten_affiliate_id: str | None = None
+    rakuten_origin: str | None = None
+
     def database_path(self) -> Path:
         return Path(self.yata_db)
 

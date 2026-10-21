@@ -59,6 +59,8 @@ def test_default_catalog_has_the_mvp_tools() -> None:
         "chatwork_list_my_tasks",
         "chatwork_send_message",
         "chatwork_create_task",
+        "rakuten_search_items",
+        "rakuten_item_ranking",
     ]
     assert registry.get("browser_click").risk == Risk.MUTATE
     assert registry.get("browser_type").risk == Risk.MUTATE
