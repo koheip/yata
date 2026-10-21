@@ -52,7 +52,7 @@ def ensure_fetchable(url: str, *, allow_private: bool) -> str:
         if not allow_private and _is_blocked_private(ip):
             raise UrlGuardError(
                 "プライベートアドレスへのアクセスは無効です。"
-                "個人利用で必要なときは TOMOSHIBI_ALLOW_PRIVATE_URLS=true にしてください。"
+                "個人利用で必要なときは YATA_ALLOW_PRIVATE_URLS=true にしてください。"
             )
     if not seen:
         raise UrlGuardError("ホスト名を解決できませんでした。")

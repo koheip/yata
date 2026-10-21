@@ -15,7 +15,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from tomoshibi.llm.types import LLMMessage, ToolCall
+from yata.llm.types import LLMMessage, ToolCall
 
 
 def utcnow() -> str:

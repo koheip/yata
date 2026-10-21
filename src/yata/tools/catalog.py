@@ -2,17 +2,17 @@
 
 from __future__ import annotations
 
-from tomoshibi.tools.browser import (
+from yata.tools.browser import (
     BrowserClickTool,
     BrowserNavigateTool,
     BrowserScreenshotTool,
     BrowserSnapshotTool,
     BrowserTypeTool,
 )
-from tomoshibi.tools.fetch import FetchPageTool
-from tomoshibi.tools.memory_tool import SaveMemoryTool
-from tomoshibi.tools.registry import ToolRegistry
-from tomoshibi.tools.search import WebSearchTool
+from yata.tools.fetch import FetchPageTool
+from yata.tools.memory_tool import SaveMemoryTool
+from yata.tools.registry import ToolRegistry
+from yata.tools.search import WebSearchTool
 
 
 def build_registry(

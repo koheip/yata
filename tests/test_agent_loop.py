@@ -5,12 +5,12 @@ from __future__ import annotations
 import asyncio
 
 from tests.fakes import ExplodingTool, MutatingTool, RecordingTool, ScriptedProvider
-from tomoshibi.agent.loop import run_agent
-from tomoshibi.confirm.gate import InMemoryConfirmationGate, ScriptedGate
-from tomoshibi.llm.types import LLMMessage, LLMResponse, ProviderError, ToolCall
-from tomoshibi.tools.base import ToolContext
-from tomoshibi.tools.policy import ToolPolicy
-from tomoshibi.tools.registry import ToolRegistry
+from yata.agent.loop import run_agent
+from yata.confirm.gate import InMemoryConfirmationGate, ScriptedGate
+from yata.llm.types import LLMMessage, LLMResponse, ProviderError, ToolCall
+from yata.tools.base import ToolContext
+from yata.tools.policy import ToolPolicy
+from yata.tools.registry import ToolRegistry
 
 
 def _ctx() -> ToolContext:

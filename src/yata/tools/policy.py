@@ -6,7 +6,7 @@ change to the agent loop.
 
 from __future__ import annotations
 
-from tomoshibi.tools.base import Risk, Tool
+from yata.tools.base import Risk, Tool
 
 CONFIRM_RISKS = {Risk.MUTATE, Risk.EXTERNAL}
 

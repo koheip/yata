@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from tomoshibi.llm.convert import parse_anthropic_response, to_anthropic_payload
-from tomoshibi.llm.errors import humanize_provider_error
-from tomoshibi.llm.types import LLMMessage, LLMResponse, ProviderError, ToolSpec
+from yata.llm.convert import parse_anthropic_response, to_anthropic_payload
+from yata.llm.errors import humanize_provider_error
+from yata.llm.types import LLMMessage, LLMResponse, ProviderError, ToolSpec
 
 
 class AnthropicProvider:

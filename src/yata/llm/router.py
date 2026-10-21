@@ -4,12 +4,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from tomoshibi.config import Settings, key_ready
-from tomoshibi.llm.anthropic_provider import AnthropicProvider
-from tomoshibi.llm.demo import DemoProvider
-from tomoshibi.llm.gemini_provider import GeminiProvider
-from tomoshibi.llm.openai_provider import OpenAICompatibleProvider, ollama_openai_base
-from tomoshibi.llm.types import LLMProvider, ProviderError
+from yata.config import Settings, key_ready
+from yata.llm.anthropic_provider import AnthropicProvider
+from yata.llm.demo import DemoProvider
+from yata.llm.gemini_provider import GeminiProvider
+from yata.llm.openai_provider import OpenAICompatibleProvider, ollama_openai_base
+from yata.llm.types import LLMProvider, ProviderError
 
 
 @dataclass(frozen=True)
@@ -36,7 +36,7 @@ class ModelRouter:
                 id="gemini",
                 label="Gemini",
                 provider="Google",
-                upstream_model=self.settings.tomoshibi_gemini_model,
+                upstream_model=self.settings.yata_gemini_model,
                 ready=gemini_ready,
                 note=None if gemini_ready else "GEMINI_API_KEY が未設定です。",
             ),
@@ -44,7 +44,7 @@ class ModelRouter:
                 id="openai",
                 label="GPT-4o mini",
                 provider="OpenAI",
-                upstream_model=self.settings.tomoshibi_openai_model,
+                upstream_model=self.settings.yata_openai_model,
                 ready=openai_ready,
                 note=None if openai_ready else "OPENAI_API_KEY が未設定です。",
             ),
@@ -52,7 +52,7 @@ class ModelRouter:
                 id="anthropic",
                 label="Claude",
                 provider="Anthropic",
-                upstream_model=self.settings.tomoshibi_anthropic_model,
+                upstream_model=self.settings.yata_anthropic_model,
                 ready=anthropic_ready,
                 note=None if anthropic_ready else "ANTHROPIC_API_KEY が未設定です。",
             ),
@@ -60,7 +60,7 @@ class ModelRouter:
                 id="ollama",
                 label="Ollama（ローカル）",
                 provider="OpenAI互換",
-                upstream_model=self.settings.tomoshibi_ollama_model,
+                upstream_model=self.settings.yata_ollama_model,
                 ready=True,
                 note="Ollama など OpenAI 互換サーバーが起動している必要があります。",
             ),

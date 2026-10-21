@@ -9,7 +9,7 @@ from __future__ import annotations
 import re
 import uuid
 
-from tomoshibi.llm.types import LLMMessage, LLMResponse, ToolCall, ToolSpec
+from yata.llm.types import LLMMessage, LLMResponse, ToolCall, ToolSpec
 
 _URL = re.compile(r"https?://[^\s)>\]]+")
 

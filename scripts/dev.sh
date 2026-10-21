@@ -14,7 +14,7 @@ if [[ ! -d frontend/node_modules ]]; then
   npm --prefix frontend install
 fi
 
-uv run tomoshibi --host 127.0.0.1 --port 8741 &
+uv run yata --host 127.0.0.1 --port 8741 &
 api_pid=$!
 trap 'kill ${api_pid} 2>/dev/null || true' EXIT
 

@@ -9,7 +9,7 @@ import asyncio
 from collections.abc import Callable
 from typing import Any
 
-from tomoshibi.tools.base import Tool, ToolContext, ToolResult, clip_text
+from yata.tools.base import Tool, ToolContext, ToolResult, clip_text
 
 SearchFn = Callable[[str, int], list[dict[str, Any]]]
 

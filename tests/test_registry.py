@@ -5,11 +5,11 @@ from __future__ import annotations
 import pytest
 
 from tests.fakes import MutatingTool, RecordingTool
-from tomoshibi.llm.convert import to_openai_tools
-from tomoshibi.tools.base import Risk, validate_arguments
-from tomoshibi.tools.catalog import build_registry
-from tomoshibi.tools.policy import ToolPolicy, describe_action
-from tomoshibi.tools.registry import DuplicateToolError, ToolRegistry, UnknownToolError
+from yata.llm.convert import to_openai_tools
+from yata.tools.base import Risk, validate_arguments
+from yata.tools.catalog import build_registry
+from yata.tools.policy import ToolPolicy, describe_action
+from yata.tools.registry import DuplicateToolError, ToolRegistry, UnknownToolError
 
 
 def test_register_get_and_schema_export() -> None:

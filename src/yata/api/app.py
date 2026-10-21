@@ -17,18 +17,18 @@ from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Streamin
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
-from tomoshibi.agent.loop import run_agent, seal_open_tool_calls
-from tomoshibi.config import Settings
-from tomoshibi.confirm.gate import InMemoryConfirmationGate
-from tomoshibi.llm.openai_provider import ollama_root
-from tomoshibi.llm.router import ModelInfo, ModelRouter
-from tomoshibi.llm.types import LLMMessage, ProviderError
-from tomoshibi.memory.store import MemoryStore, to_transcript
-from tomoshibi.prompts import build_system_prompt
-from tomoshibi.tools.base import ToolContextFactory
-from tomoshibi.tools.browser import BrowserSession
-from tomoshibi.tools.catalog import build_registry
-from tomoshibi.tools.policy import ToolPolicy
+from yata.agent.loop import run_agent, seal_open_tool_calls
+from yata.config import Settings
+from yata.confirm.gate import InMemoryConfirmationGate
+from yata.llm.openai_provider import ollama_root
+from yata.llm.router import ModelInfo, ModelRouter
+from yata.llm.types import LLMMessage, ProviderError
+from yata.memory.store import MemoryStore, to_transcript
+from yata.prompts import build_system_prompt
+from yata.tools.base import ToolContextFactory
+from yata.tools.browser import BrowserSession
+from yata.tools.catalog import build_registry
+from yata.tools.policy import ToolPolicy
 
 logger = logging.getLogger(__name__)
 _ARTIFACT_NAME = re.compile(r"^[A-Za-z0-9._-]+$")
@@ -67,7 +67,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         yield
         await browser.close()
 
-    app = FastAPI(title="灯 Tomoshibi", version="0.1.0", lifespan=lifespan)
+    app = FastAPI(title="ヤタ Yata", version="0.1.0", lifespan=lifespan)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=[
@@ -90,13 +90,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @app.get("/api/health")
     def health() -> dict[str, Any]:
-        return {"ok": True, "name": "tomoshibi"}
+        return {"ok": True, "name": "yata"}
 
     @app.get("/api/models")
     async def list_models() -> dict[str, Any]:
         models = await _visible_models(model_router, settings)
         return {
-            "default_model_id": settings.tomoshibi_model,
+            "default_model_id": settings.yata_model,
             "models": [_model_dict(model) for model in models],
         }
 
@@ -108,7 +108,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @app.post("/api/conversations", status_code=201)
     def create_conversation(body: CreateConversation) -> dict[str, Any]:
-        model_id = body.model_id or settings.tomoshibi_model
+        model_id = body.model_id or settings.yata_model
         _known_model(model_router, model_id)
         title = body.title.strip() if body.title else "新しい会話"
         conversation = memory.create_conversation(model_id, title or "新しい会話")
@@ -188,7 +188,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             memory=memory,
             browser=browser,
             artifacts_dir=artifacts,
-            allow_private_urls=settings.tomoshibi_allow_private_urls,
+            allow_private_urls=settings.yata_allow_private_urls,
         ).for_conversation(conversation_id)
 
         async def generate():
@@ -201,7 +201,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                     policy=ToolPolicy(),
                     gate=gate,
                     ctx=ctx,
-                    max_steps=settings.tomoshibi_max_steps,
+                    max_steps=settings.yata_max_steps,
                 ):
                     yield _sse(event.as_dict())
             except Exception:
@@ -245,7 +245,7 @@ def _mount_frontend(app: FastAPI) -> None:
         def missing_frontend() -> HTMLResponse:
             return HTMLResponse(
                 "<main style='font-family:sans-serif;padding:2rem'>"
-                "<h1>灯</h1>"
+                "<h1>ヤタ</h1>"
                 "<p>フロントエンドがまだビルドされていません。</p>"
                 "<p><code>npm --prefix frontend install && npm --prefix frontend run build</code></p>"
                 "<p>API ドキュメントは <a href='/docs'>/docs</a> です。</p>"

@@ -19,7 +19,7 @@ export function Transcript({ messages, streaming, onSuggest }: TranscriptProps) 
   if (messages.length === 0) {
     return (
       <div className="mx-auto flex min-h-full max-w-2xl flex-col justify-center px-4 py-16">
-        <p className="font-mincho text-4xl text-foreground">灯をともす</p>
+        <p className="font-mincho text-4xl text-foreground">ヤタに聞く</p>
         <p className="mt-3 max-w-xl text-sm leading-7 text-muted-foreground">
           調べて、ページを読んで、必要なときだけブラウザを動かします。APIキーがなくても、デモモデルでツールの流れを見られます。
         </p>

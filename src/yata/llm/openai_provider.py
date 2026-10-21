@@ -6,9 +6,9 @@ and a placeholder API key. That is the OpenAI-compatible path in this MVP.
 
 from __future__ import annotations
 
-from tomoshibi.llm.convert import parse_openai_message, to_openai_messages, to_openai_tools
-from tomoshibi.llm.errors import humanize_provider_error
-from tomoshibi.llm.types import LLMMessage, LLMResponse, ProviderError, ToolSpec
+from yata.llm.convert import parse_openai_message, to_openai_messages, to_openai_tools
+from yata.llm.errors import humanize_provider_error
+from yata.llm.types import LLMMessage, LLMResponse, ProviderError, ToolSpec
 
 
 class OpenAICompatibleProvider:

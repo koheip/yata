@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from tomoshibi.llm.types import LLMMessage, LLMResponse, ToolSpec
-from tomoshibi.tools.base import Risk, Tool, ToolContext, ToolResult
+from yata.llm.types import LLMMessage, LLMResponse, ToolSpec
+from yata.tools.base import Risk, Tool, ToolContext, ToolResult
 
 
 class ScriptedProvider:

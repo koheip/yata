@@ -1,10 +1,10 @@
 [project]
-name = "tomoshibi"
+name = "yata"
 version = "0.1.0"
 description = "調べる、読む、ブラウザを動かす個人用AIアシスタント"
 readme = "README.md"
 requires-python = ">=3.11"
-authors = [{ name = "Tomoshibi contributors" }]
+authors = [{ name = "Yata contributors" }]
 license = { text = "MIT" }
 dependencies = [
     "anthropic>=0.49",
@@ -28,17 +28,17 @@ dev = [
 ]
 
 [project.scripts]
-tomoshibi = "tomoshibi.main:main"
+yata = "yata.main:main"
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/tomoshibi"]
+packages = ["src/yata"]
 
 [tool.hatch.build.targets.wheel.sources]
-"src/tomoshibi" = "tomoshibi"
+"src/yata" = "yata"
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

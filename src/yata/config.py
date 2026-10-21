@@ -25,20 +25,20 @@ class Settings(BaseSettings):
     anthropic_api_key: str | None = None
     ollama_base_url: str = "http://127.0.0.1:11434"
 
-    tomoshibi_model: str = "gemini"
-    tomoshibi_host: str = "127.0.0.1"
-    tomoshibi_port: int = 8741
-    tomoshibi_db: str = "data/tomoshibi.db"
-    tomoshibi_max_steps: int = Field(default=8, ge=1, le=24)
-    tomoshibi_allow_private_urls: bool = True
+    yata_model: str = "gemini"
+    yata_host: str = "127.0.0.1"
+    yata_port: int = 8741
+    yata_db: str = "data/yata.db"
+    yata_max_steps: int = Field(default=8, ge=1, le=24)
+    yata_allow_private_urls: bool = True
 
-    tomoshibi_gemini_model: str = "gemini-2.5-flash"
-    tomoshibi_openai_model: str = "gpt-4o-mini"
-    tomoshibi_anthropic_model: str = "claude-sonnet-4-5"
-    tomoshibi_ollama_model: str = "gemma3:4b"
+    yata_gemini_model: str = "gemini-2.5-flash"
+    yata_openai_model: str = "gpt-4o-mini"
+    yata_anthropic_model: str = "claude-sonnet-4-5"
+    yata_ollama_model: str = "gemma3:4b"
 
     def database_path(self) -> Path:
-        return Path(self.tomoshibi_db)
+        return Path(self.yata_db)
 
     def artifacts_dir(self) -> Path:
         path = self.database_path().parent / "artifacts"

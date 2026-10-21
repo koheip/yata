@@ -12,11 +12,11 @@ from collections.abc import AsyncIterator
 from dataclasses import dataclass
 from typing import Any
 
-from tomoshibi.confirm.gate import ConfirmationGate
-from tomoshibi.llm.types import LLMMessage, LLMProvider, ProviderError, ToolCall
-from tomoshibi.tools.base import ToolContext, ToolResult, validate_arguments
-from tomoshibi.tools.policy import ToolPolicy, describe_action
-from tomoshibi.tools.registry import ToolRegistry, UnknownToolError
+from yata.confirm.gate import ConfirmationGate
+from yata.llm.types import LLMMessage, LLMProvider, ProviderError, ToolCall
+from yata.tools.base import ToolContext, ToolResult, validate_arguments
+from yata.tools.policy import ToolPolicy, describe_action
+from yata.tools.registry import ToolRegistry, UnknownToolError
 
 logger = logging.getLogger(__name__)
 

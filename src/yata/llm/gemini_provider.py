@@ -8,9 +8,9 @@ from __future__ import annotations
 
 from typing import Any
 
-from tomoshibi.llm.convert import parse_gemini_response, to_gemini_contents
-from tomoshibi.llm.errors import humanize_provider_error
-from tomoshibi.llm.types import LLMMessage, LLMResponse, ProviderError, ToolSpec
+from yata.llm.convert import parse_gemini_response, to_gemini_contents
+from yata.llm.errors import humanize_provider_error
+from yata.llm.types import LLMMessage, LLMResponse, ProviderError, ToolSpec
 
 _GEMINI_TYPES = {
     "object": "OBJECT",

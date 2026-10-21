@@ -1,6 +1,6 @@
-# 灯（Tomoshibi）
+# ヤタ（Yata）
 
-調べる、読む、ブラウザを動かす。個人のための汎用 AI アシスタントです。
+調べる、読む、ブラウザを動かす。個人のための汎用 AI アシスタントです。名前のヤタは、神武天皇を導いた八咫烏（やたがらす）から来ています。道を示す案内役、という役割です。
 
 モデルがツールを呼び、結果を見て、もう一度考える。その途中経過がチャットに流れ、クリックや入力の前には確認が入ります。会話と、ユーザーについての短い記憶は SQLite に残ります。
 
@@ -90,12 +90,12 @@ sequenceDiagram
 
 | 場所 | 役割 |
 | --- | --- |
-| `src/tomoshibi/agent/loop.py` | 考える、ツールを呼ぶ、観察する、答える。ステップ上限つき |
-| `src/tomoshibi/llm/` | `LLMProvider`。公式 SDK への変換は `convert.py` |
-| `src/tomoshibi/tools/` | ツールのインターフェース、登録、検索、読解、ブラウザ、記憶 |
-| `src/tomoshibi/confirm/gate.py` | 危険な操作を UI の別リクエストで許可する |
-| `src/tomoshibi/memory/store.py` | 会話と事実の SQLite |
-| `src/tomoshibi/api/app.py` | HTTP と SSE。ビルド済み UI も同じポートで配信 |
+| `src/yata/agent/loop.py` | 考える、ツールを呼ぶ、観察する、答える。ステップ上限つき |
+| `src/yata/llm/` | `LLMProvider`。公式 SDK への変換は `convert.py` |
+| `src/yata/tools/` | ツールのインターフェース、登録、検索、読解、ブラウザ、記憶 |
+| `src/yata/confirm/gate.py` | 危険な操作を UI の別リクエストで許可する |
+| `src/yata/memory/store.py` | 会話と事実の SQLite |
+| `src/yata/api/app.py` | HTTP と SSE。ビルド済み UI も同じポートで配信 |
 | `frontend/` | 日本語のチャット。モデル選択、途中経過、確認ダイアログ |
 
 バックエンドは Python です。エージェント、Playwright、SQLite が同じプロセスにあり、ツール追加の型がそのまま読めます。画面は TypeScript です。会話の状態と SSE の扱いを型で固定するためです。
@@ -104,7 +104,7 @@ sequenceDiagram
 
 `LLMProvider` は `complete(messages, tools, model)` だけです。中のメッセージ型はプロバイダを知りません。Gemini、OpenAI、Anthropic、Ollama への翻訳はアダプタの仕事です。
 
-LiteLLM のような単一ラッパーも候補でした。この版では公式 SDK（`google-genai`、`openai`、`anthropic`）を選んでいます。依存が小さく、ツール結果の形の違い（OpenAI は `tool` ロール、Anthropic は `tool_result`、Gemini は `function_response`）が `convert.py` に残るためです。Ollama、LM Studio、vLLM は OpenAI SDK の `base_url` を変えるだけです。モデル名は `.env` の `TOMOSHIBI_*_MODEL` で変えます。
+LiteLLM のような単一ラッパーも候補でした。この版では公式 SDK（`google-genai`、`openai`、`anthropic`）を選んでいます。依存が小さく、ツール結果の形の違い（OpenAI は `tool` ロール、Anthropic は `tool_result`、Gemini は `function_response`）が `convert.py` に残るためです。Ollama、LM Studio、vLLM は OpenAI SDK の `base_url` を変えるだけです。モデル名は `.env` の `YATA_*_MODEL` で変えます。
 
 キーが無いプロバイダはモデル一覧で「利用不可」になり、送信前に API が拒否します。
 
@@ -121,7 +121,7 @@ LiteLLM のような単一ラッパーも候補でした。この版では公式
 
 ループは `ToolPolicy` に聞くだけです。デスクトップ操作を足すときは、同じインターフェースで `Risk.EXTERNAL` のツールを登録します。確認の待ち方は変わりません。PC 全体のマウス操作はこの版の範囲外です。
 
-検索は DuckDuckGo（`ddgs`、API キー不要）です。ページ読解は HTTP で取得し、本文だけを抜きます。リダイレクトのたびに URL を検査します。`169.254.169.254` と `metadata.google.internal` は常に拒否します。プライベートアドレスは `TOMOSHIBI_ALLOW_PRIVATE_URLS` で切り替えます。個人利用の既定は `true` です。公開するときは `false` にします。
+検索は DuckDuckGo（`ddgs`、API キー不要）です。ページ読解は HTTP で取得し、本文だけを抜きます。リダイレクトのたびに URL を検査します。`169.254.169.254` と `metadata.google.internal` は常に拒否します。プライベートアドレスは `YATA_ALLOW_PRIVATE_URLS` で切り替えます。個人利用の既定は `true` です。公開するときは `false` にします。
 
 ブラウザは会話ごとに1ページを持つヘッドレス Chromium です。セレクタは Playwright の記法（`text=次へ`、`role=button[name="検索"]`）です。
 
@@ -143,12 +143,12 @@ LiteLLM のような単一ラッパーも候補でした。この版では公式
 | `OPENAI_API_KEY` | OpenAI |
 | `ANTHROPIC_API_KEY` | Anthropic |
 | `OLLAMA_BASE_URL` | 既定 `http://127.0.0.1:11434` |
-| `TOMOSHIBI_MODEL` | 既定のモデル id（`gemini` / `openai` / `anthropic` / `ollama` / `demo`） |
-| `TOMOSHIBI_*_MODEL` | 上流のモデル名 |
-| `TOMOSHIBI_MAX_STEPS` | 1ターンのモデル呼び出し上限（既定 8） |
-| `TOMOSHIBI_ALLOW_PRIVATE_URLS` | プライベートアドレスを開くか |
+| `YATA_MODEL` | 既定のモデル id（`gemini` / `openai` / `anthropic` / `ollama` / `demo`） |
+| `YATA_*_MODEL` | 上流のモデル名 |
+| `YATA_MAX_STEPS` | 1ターンのモデル呼び出し上限（既定 8） |
+| `YATA_ALLOW_PRIVATE_URLS` | プライベートアドレスを開くか |
 
-ローカルモデルはツール呼び出しに対応したものを選んでください。`ollama pull gemma3` のように入れ、`TOMOSHIBI_OLLAMA_MODEL` をその名前に合わせます。
+ローカルモデルはツール呼び出しに対応したものを選んでください。`ollama pull gemma3` のように入れ、`YATA_OLLAMA_MODEL` をその名前に合わせます。
 
 ## テスト
 
@@ -167,7 +167,7 @@ uv run pytest
 ## ディレクトリ
 
 ```
-src/tomoshibi/          エージェント、モデル、ツール、記憶、API
+src/yata/          エージェント、モデル、ツール、記憶、API
 frontend/               チャット UI
 tests/                  上記のテスト
 scripts/run.sh          セットアップ済みなら、これだけで起動
@@ -181,12 +181,12 @@ scripts/run.sh          セットアップ済みなら、これだけで起動
 1. **デスクトップ操作。** `Tool` と `Risk.EXTERNAL` はすでに確認ゲートへつながっています。画面全体のクリックやキー入力は、そのリスクで新しいツールとして足します。ブラウザのページ操作とはセッションを分けます。
 2. **定期実行。** 同じ `run_agent` を、保存したプロンプトと cron またはスケジューラから呼びます。結果は通常の会話として残します。
 3. **コネクタ。** カレンダー、メール、GitHub。外へ出る操作は `Risk.EXTERNAL` にして、必ず確認を通します。
-4. **マルチユーザー。** 認証、会話の所有者、ブラウザセッションの分離、SQLite から Postgres、`TOMOSHIBI_ALLOW_PRIVATE_URLS=false` を既定にする、秘密の保管。URL 検査はリクエスト直前の名前解決なので、公開時はリダイレクトと DNS 再バインドの見直しもここです。
+4. **マルチユーザー。** 認証、会話の所有者、ブラウザセッションの分離、SQLite から Postgres、`YATA_ALLOW_PRIVATE_URLS=false` を既定にする、秘密の保管。URL 検査はリクエスト直前の名前解決なので、公開時はリダイレクトと DNS 再バインドの見直しもここです。
 5. **記憶の検索と、トークン単位のストリーミング。** 事実が増えたら埋め込みで引く。回答本文は、ツールが無い最終ターンから順にトークン配信へ移します。
 
 ## English
 
-Tomoshibi (灯, "lamp") is a personal AI assistant. An LLM chooses tools, observes the results, and answers. The chat shows each step as it happens. Clicks and typing wait for confirmation. History and a few long-term facts live in SQLite.
+Yata (ヤタ) is a personal AI assistant. The name comes from Yatagarasu (八咫烏), the sacred three-legged crow that guided Emperor Jimmu. It is a guide that shows the way. An LLM chooses tools, observes the results, and answers. The chat shows each step as it happens. Clicks and typing wait for confirmation. History and a few long-term facts live in SQLite.
 
 ### Run
 
@@ -207,7 +207,7 @@ Providers implement one method, `complete(messages, tools, model)`. Adapters use
 
 Tools are classes with a JSON schema and a `Risk`. `read` and `write` run immediately. `mutate` (browser click and type) and `external` (the slot for future desktop control, mail, and payments) go through `ConfirmationGate`. The loop asks the policy. It does not special-case tools. Desktop control is not implemented. The gate and the risk enum are the extension point.
 
-Search uses DuckDuckGo via `ddgs` (no key). Page reading checks every redirect. The cloud metadata address is always blocked. Private hosts are allowed only when `TOMOSHIBI_ALLOW_PRIVATE_URLS=true`, which is the personal default and should be turned off before a public deploy.
+Search uses DuckDuckGo via `ddgs` (no key). Page reading checks every redirect. The cloud metadata address is always blocked. Private hosts are allowed only when `YATA_ALLOW_PRIVATE_URLS=true`, which is the personal default and should be turned off before a public deploy.
 
 ### Roadmap
 

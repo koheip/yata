@@ -8,10 +8,10 @@ from urllib.parse import urljoin
 
 import httpx
 
-from tomoshibi.netguard import UrlGuardError, ensure_fetchable
-from tomoshibi.tools.base import Tool, ToolContext, ToolResult, clip_text
+from yata.netguard import UrlGuardError, ensure_fetchable
+from yata.tools.base import Tool, ToolContext, ToolResult, clip_text
 
-USER_AGENT = "Tomoshibi/0.1 (personal research assistant)"
+USER_AGENT = "Yata/0.1 (personal research assistant)"
 FetchFn = Callable[[str, bool], Awaitable[tuple[str, str]]]
 
 

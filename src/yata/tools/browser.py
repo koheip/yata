@@ -13,8 +13,8 @@ import uuid
 from pathlib import Path
 from typing import Any
 
-from tomoshibi.netguard import UrlGuardError, ensure_fetchable
-from tomoshibi.tools.base import Risk, Tool, ToolContext, ToolResult, clip_text
+from yata.netguard import UrlGuardError, ensure_fetchable
+from yata.tools.base import Risk, Tool, ToolContext, ToolResult, clip_text
 
 logger = logging.getLogger(__name__)
 

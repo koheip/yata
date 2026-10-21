@@ -24,4 +24,4 @@ if [[ ! -f frontend/dist/index.html ]]; then
   npm --prefix frontend run build
 fi
 
-exec uv run tomoshibi "$@"
+exec uv run yata "$@"

@@ -7,12 +7,12 @@ import logging
 
 import uvicorn
 
-from tomoshibi.api.app import create_app
-from tomoshibi.config import Settings
+from yata.api.app import create_app
+from yata.config import Settings
 
 
 def main(argv: list[str] | None = None) -> None:
-    parser = argparse.ArgumentParser(prog="tomoshibi", description="灯 — 個人用AIアシスタント")
+    parser = argparse.ArgumentParser(prog="yata", description="ヤタ — 個人用AIアシスタント")
     parser.add_argument("--host", default=None)
     parser.add_argument("--port", type=int, default=None)
     args = parser.parse_args(argv)
@@ -22,8 +22,8 @@ def main(argv: list[str] | None = None) -> None:
         format="%(asctime)s %(levelname)s %(name)s: %(message)s",
     )
     settings = Settings()
-    host = args.host or settings.tomoshibi_host
-    port = args.port or settings.tomoshibi_port
+    host = args.host or settings.yata_host
+    port = args.port or settings.yata_port
     uvicorn.run(create_app(settings), host=host, port=port)
 
 

@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from tomoshibi.llm.types import ToolSpec
-from tomoshibi.tools.base import Tool
+from yata.llm.types import ToolSpec
+from yata.tools.base import Tool
 
 
 class DuplicateToolError(ValueError):

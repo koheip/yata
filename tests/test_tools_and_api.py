@@ -7,13 +7,13 @@ from pathlib import Path
 
 from fastapi.testclient import TestClient
 
-from tomoshibi.api.app import create_app
-from tomoshibi.config import Settings
-from tomoshibi.netguard import UrlGuardError, ensure_fetchable
-from tomoshibi.tools.base import ToolContext
-from tomoshibi.tools.browser import BrowserClickTool, BrowserNavigateTool, BrowserScreenshotTool
-from tomoshibi.tools.fetch import FetchPageTool, html_to_text
-from tomoshibi.tools.search import format_search_results
+from yata.api.app import create_app
+from yata.config import Settings
+from yata.netguard import UrlGuardError, ensure_fetchable
+from yata.tools.base import ToolContext
+from yata.tools.browser import BrowserClickTool, BrowserNavigateTool, BrowserScreenshotTool
+from yata.tools.fetch import FetchPageTool, html_to_text
+from yata.tools.search import format_search_results
 
 
 def test_url_guard_blocks_metadata_and_optionally_private() -> None:
@@ -126,9 +126,9 @@ def test_api_demo_chat_persists_tool_steps(tmp_path: Path, monkeypatch) -> None:
         gemini_api_key=None,
         openai_api_key=None,
         anthropic_api_key=None,
-        tomoshibi_db=str(tmp_path / "app.db"),
-        tomoshibi_model="demo",
-        tomoshibi_allow_private_urls=False,
+        yata_db=str(tmp_path / "app.db"),
+        yata_model="demo",
+        yata_allow_private_urls=False,
     )
     app = create_app(settings)
     with TestClient(app) as client:

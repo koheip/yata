@@ -9,7 +9,7 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from tomoshibi.llm.types import LLMMessage, LLMResponse, ToolCall, ToolSpec, parse_arguments
+from yata.llm.types import LLMMessage, LLMResponse, ToolCall, ToolSpec, parse_arguments
 
 
 def to_openai_messages(messages: list[LLMMessage]) -> list[dict[str, Any]]:

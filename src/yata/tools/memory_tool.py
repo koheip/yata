@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from tomoshibi.tools.base import Risk, Tool, ToolContext, ToolResult
+from yata.tools.base import Risk, Tool, ToolContext, ToolResult
 
 
 class SaveMemoryTool(Tool):

@@ -4,13 +4,13 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from tomoshibi.llm.types import LLMMessage, ToolCall
-from tomoshibi.memory.store import MemoryStore, clip_title, to_transcript
-from tomoshibi.prompts import build_system_prompt
+from yata.llm.types import LLMMessage, ToolCall
+from yata.memory.store import MemoryStore, clip_title, to_transcript
+from yata.prompts import build_system_prompt
 
 
 def test_conversations_messages_and_facts(tmp_path: Path) -> None:
-    store = MemoryStore(tmp_path / "nested" / "tomoshibi.db")
+    store = MemoryStore(tmp_path / "nested" / "yata.db")
     conversation = store.create_conversation("demo")
     assert conversation.title == "新しい会話"
     store.add_message(conversation.id, LLMMessage(role="user", content="ZEN大学でAIエンジニアを目指しています"))
@@ -44,7 +44,7 @@ def test_conversations_messages_and_facts(tmp_path: Path) -> None:
     assert again.value == "ZEN大学"
     assert len(store.list_facts()) == 1
 
-    reloaded = MemoryStore(tmp_path / "nested" / "tomoshibi.db")
+    reloaded = MemoryStore(tmp_path / "nested" / "yata.db")
     messages = reloaded.list_messages(conversation.id)
     assert [item.role for item in messages] == ["user", "assistant", "tool", "assistant"]
     assert messages[1].tool_calls is not None
@@ -65,7 +65,7 @@ def test_conversations_messages_and_facts(tmp_path: Path) -> None:
 
 
 def test_transcript_marks_denied_tools_and_clip_title() -> None:
-    from tomoshibi.memory.store import StoredMessage
+    from yata.memory.store import StoredMessage
 
     stored = [
         StoredMessage(
@@ -117,4 +117,4 @@ def test_system_prompt_includes_facts() -> None:
     prompt = build_system_prompt([Fact("university", "ZEN大学"), Fact("goal", "AIエンジニア")])
     assert "ZEN大学" in prompt
     assert "goal: AIエンジニア" in prompt
-    assert "灯" in build_system_prompt([])
+    assert "ヤタ" in build_system_prompt([])

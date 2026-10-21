@@ -46,10 +46,10 @@ export function Sidebar({
         )}
       >
         <div className="flex items-center gap-3 px-4 py-4">
-          <LampMark />
+          <CrowMark />
           <div>
-            <p className="font-mincho text-2xl leading-none">灯</p>
-            <p className="text-xs tracking-[0.18em] text-muted-foreground">ともしび</p>
+            <p className="font-mincho text-2xl leading-none">ヤタ</p>
+            <p className="text-xs tracking-[0.18em] text-muted-foreground">八咫烏</p>
           </div>
         </div>
         <div className="px-3">
@@ -137,12 +137,21 @@ export function MenuButton({ onClick }: { onClick: () => void }) {
   )
 }
 
-function LampMark() {
+function CrowMark() {
   return (
     <svg viewBox="0 0 32 32" className="size-9" aria-hidden="true">
       <rect width="32" height="32" rx="10" fill="#fbf8f1" stroke="#ddd4c3" />
-      <path d="M16 5c.6 2.8 3.4 4.6 3.4 7.8 0 2.2-1.4 3.6-3.4 4.2-2-.6-3.4-2-3.4-4.2C12.6 9.6 15.4 7.8 16 5z" fill="#b8432f" />
-      <path d="M11.5 21.5h9M16 17.2V26M13 26h6" stroke="#1c1915" fill="none" strokeWidth="1.4" strokeLinecap="round" />
+      <path
+        d="M6.2 17.6c2.4-.6 4.2-2 5-3.6-.2 2.2 1.2 4.2 3.4 5.4-2.6.2-5.2-.4-6.8-1.8-.6.6-1.2 1.2-1.6 0z"
+        fill="#1c1915"
+      />
+      <path
+        d="M10.4 15.2c.6-3.2 3.2-5.6 6.6-5.8 2.2-.1 3.8.6 5.2 2l3.4-1.4c.3 1.3-.4 2.2-1.6 2.5l-1.6.5c.5 1.1.4 2.3-.4 3.3-1.5 1.8-4 3-6.8 2.9-3-.1-5.2-1.5-6-3.2.6-.4 1-.7 1.2-.8z"
+        fill="#1c1915"
+      />
+      <path d="M23.6 12.4 28 13.1l-4.2 1.5z" fill="#b8432f" />
+      <circle cx="21.2" cy="13.2" r="0.75" fill="#fbf8f1" />
+      <path d="M13.2 21.6v3.2M16 22v3.4M18.8 21.6v3" stroke="#1c1915" strokeWidth="1.15" strokeLinecap="round" />
     </svg>
   )
 }

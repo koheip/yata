@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import Any
 
-from tomoshibi.llm.types import ToolSpec
+from yata.llm.types import ToolSpec
 
 
 class Risk(StrEnum):

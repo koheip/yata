@@ -6,9 +6,9 @@ from types import SimpleNamespace
 
 import pytest
 
-from tomoshibi.config import Settings
-from tomoshibi.llm.anthropic_provider import AnthropicProvider
-from tomoshibi.llm.convert import (
+from yata.config import Settings
+from yata.llm.anthropic_provider import AnthropicProvider
+from yata.llm.convert import (
     parse_anthropic_response,
     parse_gemini_response,
     parse_openai_message,
@@ -17,11 +17,11 @@ from tomoshibi.llm.convert import (
     to_openai_messages,
     to_openai_tools,
 )
-from tomoshibi.llm.demo import DemoProvider
-from tomoshibi.llm.gemini_provider import to_gemini_schema
-from tomoshibi.llm.openai_provider import OpenAICompatibleProvider, ollama_openai_base, ollama_root
-from tomoshibi.llm.router import ModelRouter
-from tomoshibi.llm.types import LLMMessage, ProviderError, ToolCall, ToolSpec
+from yata.llm.demo import DemoProvider
+from yata.llm.gemini_provider import to_gemini_schema
+from yata.llm.openai_provider import OpenAICompatibleProvider, ollama_openai_base, ollama_root
+from yata.llm.router import ModelRouter
+from yata.llm.types import LLMMessage, ProviderError, ToolCall, ToolSpec
 
 
 def _spec() -> ToolSpec:
@@ -175,7 +175,7 @@ def test_router_hides_models_without_keys_and_resolves_ollama() -> None:
         gemini_api_key=None,
         openai_api_key="sk-test",
         anthropic_api_key="",
-        tomoshibi_model="gemini",
+        yata_model="gemini",
     )
     router = ModelRouter(settings)
     by_id = {item.id: item for item in router.catalog()}
@@ -188,7 +188,7 @@ def test_router_hides_models_without_keys_and_resolves_ollama() -> None:
     provider, upstream = router.resolve("ollama")
     assert isinstance(provider, OpenAICompatibleProvider)
     assert provider.provider_name == "Ollama"
-    assert upstream == settings.tomoshibi_ollama_model
+    assert upstream == settings.yata_ollama_model
 
     demo, _ = router.resolve("demo")
     assert isinstance(demo, DemoProvider)
@@ -212,9 +212,9 @@ def test_router_resolves_official_sdks() -> None:
     assert isinstance(openai, OpenAICompatibleProvider)
     assert openai._base_url is None
     assert isinstance(anthropic, AnthropicProvider)
-    assert gemini_model == settings.tomoshibi_gemini_model
-    assert openai_model == settings.tomoshibi_openai_model
-    assert anthropic_model == settings.tomoshibi_anthropic_model
+    assert gemini_model == settings.yata_gemini_model
+    assert openai_model == settings.yata_openai_model
+    assert anthropic_model == settings.yata_anthropic_model
 
 
 @pytest.mark.asyncio
