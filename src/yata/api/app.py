@@ -569,6 +569,7 @@ def _connector_dict(connector: Connector) -> dict[str, Any]:
     return {
         "id": connector.id,
         "label": connector.label,
+        "auth_kind": connector.auth_kind,
         "status": status.value,
         "setup_instructions": connector.setup_instructions if status == ConnectorState.NOT_CONFIGURED else None,
     }

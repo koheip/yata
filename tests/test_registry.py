@@ -54,6 +54,11 @@ def test_default_catalog_has_the_mvp_tools() -> None:
         "calendar_create_event",
         "calendar_update_event",
         "calendar_delete_event",
+        "chatwork_list_rooms",
+        "chatwork_get_messages",
+        "chatwork_list_my_tasks",
+        "chatwork_send_message",
+        "chatwork_create_task",
     ]
     assert registry.get("browser_click").risk == Risk.MUTATE
     assert registry.get("browser_type").risk == Risk.MUTATE

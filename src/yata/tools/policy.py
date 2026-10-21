@@ -32,6 +32,20 @@ def describe_action(tool: Tool, arguments: dict) -> str:
             f"件名: {arguments.get('subject', '')}\n"
             f"本文:\n{arguments.get('body', '')}"
         )
+    if tool.name == "chatwork_send_message":
+        return (
+            "Chatwork にメッセージを送信します。\n"
+            f"ルーム ID: {arguments.get('room_id', '')}\n"
+            f"本文:\n{arguments.get('body', '')}"
+        )
+    if tool.name == "chatwork_create_task":
+        return (
+            "Chatwork にタスクを作成します。\n"
+            f"ルーム ID: {arguments.get('room_id', '')}\n"
+            f"担当者 ID: {arguments.get('to_ids', [])}\n"
+            f"期限（Unix 秒）: {arguments.get('limit') if arguments.get('limit') is not None else '未設定'}\n"
+            f"本文:\n{arguments.get('body', '')}"
+        )
     if tool.name == "calendar_create_event":
         return (
             "カレンダーに予定を作成します。\n"

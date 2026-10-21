@@ -92,6 +92,7 @@ export type ConnectorStatus = "not_configured" | "not_connected" | "connected"
 export type Connector = {
   id: string
   label: string
+  auth_kind: "oauth" | "token"
   status: ConnectorStatus
   setup_instructions: string | null
 }

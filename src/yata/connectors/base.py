@@ -30,6 +30,7 @@ class ConnectorNotConfiguredError(RuntimeError):
 class Connector(ABC):
     id: str
     label: str
+    auth_kind: str = "oauth"
     setup_instructions: str = ""
 
     @abstractmethod

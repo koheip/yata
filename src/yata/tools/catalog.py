@@ -18,6 +18,13 @@ from yata.tools.calendar import (
     CalendarUpdateEventTool,
 )
 from yata.tools.fetch import FetchPageTool
+from yata.tools.chatwork import (
+    ChatworkCreateTaskTool,
+    ChatworkGetMessagesTool,
+    ChatworkListMyTasksTool,
+    ChatworkListRoomsTool,
+    ChatworkSendMessageTool,
+)
 from yata.tools.gmail import (
     GmailCreateDraftTool,
     GmailReadTool,
@@ -52,6 +59,11 @@ def build_registry(
     registry.register(CalendarCreateEventTool())
     registry.register(CalendarUpdateEventTool())
     registry.register(CalendarDeleteEventTool())
+    registry.register(ChatworkListRoomsTool())
+    registry.register(ChatworkGetMessagesTool())
+    registry.register(ChatworkListMyTasksTool())
+    registry.register(ChatworkSendMessageTool())
+    registry.register(ChatworkCreateTaskTool())
     return registry
 
 

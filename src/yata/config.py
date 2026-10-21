@@ -48,6 +48,9 @@ class Settings(BaseSettings):
     google_oauth_client_secret: str | None = None
     google_oauth_client_secret_file: str | None = None
 
+    # Chatwork 連携。API トークンが未設定ならツールは提示されない。
+    chatwork_api_token: str | None = None
+
     def database_path(self) -> Path:
         return Path(self.yata_db)
 
