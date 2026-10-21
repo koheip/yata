@@ -17,13 +17,21 @@ from yata.tools.calendar import (
     CalendarListEventsTool,
     CalendarUpdateEventTool,
 )
-from yata.tools.fetch import FetchPageTool
 from yata.tools.chatwork import (
     ChatworkCreateTaskTool,
     ChatworkGetMessagesTool,
     ChatworkListMyTasksTool,
     ChatworkListRoomsTool,
     ChatworkSendMessageTool,
+)
+from yata.tools.fetch import FetchPageTool
+from yata.tools.freee import (
+    FreeeCreateExpenseDealTool,
+    FreeeGetTrialBalanceTool,
+    FreeeListAccountItemsTool,
+    FreeeListCompaniesTool,
+    FreeeListDealsTool,
+    FreeeListInvoicesTool,
 )
 from yata.tools.gmail import (
     GmailCreateDraftTool,
@@ -67,6 +75,12 @@ def build_registry(
     registry.register(ChatworkCreateTaskTool())
     registry.register(RakutenSearchItemsTool())
     registry.register(RakutenItemRankingTool())
+    registry.register(FreeeListCompaniesTool())
+    registry.register(FreeeListAccountItemsTool())
+    registry.register(FreeeListDealsTool())
+    registry.register(FreeeListInvoicesTool())
+    registry.register(FreeeGetTrialBalanceTool())
+    registry.register(FreeeCreateExpenseDealTool())
     return registry
 
 

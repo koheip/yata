@@ -8,6 +8,7 @@ from __future__ import annotations
 from yata.config import Settings
 from yata.connectors.base import ConnectorRegistry
 from yata.connectors.chatwork import ChatworkConnector
+from yata.connectors.freee import FreeeConnector
 from yata.connectors.google import GmailConnector, GoogleCalendarConnector
 from yata.connectors.google_oauth import load_google_oauth_client
 from yata.connectors.rakuten import RakutenConnector
@@ -24,5 +25,9 @@ def build_connector_registry(settings: Settings) -> ConnectorRegistry:
     registry.register(RakutenConnector(
         settings.rakuten_application_id, settings.rakuten_access_key,
         settings.rakuten_affiliate_id, settings.rakuten_origin,
+    ))
+    registry.register(FreeeConnector(
+        settings.freee_client_id, settings.freee_client_secret,
+        f"http://127.0.0.1:{settings.yata_port}/api/connectors/freee/oauth/callback", tokens,
     ))
     return registry

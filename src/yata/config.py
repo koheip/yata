@@ -48,6 +48,10 @@ class Settings(BaseSettings):
     google_oauth_client_secret: str | None = None
     google_oauth_client_secret_file: str | None = None
 
+    # freee 会計連携。OAuth クライアント ID とシークレットの両方が必要。
+    freee_client_id: str | None = None
+    freee_client_secret: str | None = None
+
     # Chatwork 連携。API トークンが未設定ならツールは提示されない。
     chatwork_api_token: str | None = None
 

@@ -1,4 +1,10 @@
 export const TOOL_LABELS: Record<string, string> = {
+  freee_list_companies: "freee 事業所一覧",
+  freee_list_account_items: "freee 勘定科目一覧",
+  freee_list_deals: "freee 取引一覧",
+  freee_list_invoices: "freee 請求書一覧",
+  freee_get_trial_balance: "freee 損益試算表",
+  freee_create_expense_deal: "freee 支出取引を登録",
   web_search: "ウェブ検索",
   fetch_page: "ページを読む",
   browser_navigate: "ページを開く",

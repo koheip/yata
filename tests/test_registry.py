@@ -61,6 +61,12 @@ def test_default_catalog_has_the_mvp_tools() -> None:
         "chatwork_create_task",
         "rakuten_search_items",
         "rakuten_item_ranking",
+        "freee_list_companies",
+        "freee_list_account_items",
+        "freee_list_deals",
+        "freee_list_invoices",
+        "freee_get_trial_balance",
+        "freee_create_expense_deal",
     ]
     assert registry.get("browser_click").risk == Risk.MUTATE
     assert registry.get("browser_type").risk == Risk.MUTATE

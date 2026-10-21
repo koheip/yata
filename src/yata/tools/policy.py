@@ -18,6 +18,19 @@ class ToolPolicy:
 
 
 def describe_action(tool: Tool, arguments: dict) -> str:
+    if tool.name == "freee_create_expense_deal":
+        amount = arguments.get("amount", 0)
+        formatted = f"{amount:,}" if type(amount) is int else str(amount)
+        return (
+            "freee に支出取引を登録します。\n"
+            f"事業所 ID: {arguments.get('company_id', '')}\n"
+            f"発生日: {arguments.get('issue_date', '')}\n"
+            f"金額: ¥{formatted}\n"
+            f"勘定科目 ID: {arguments.get('account_item_id', '')}\n"
+            f"税区分コード: {arguments.get('tax_code', '')}\n"
+            f"取引先 ID: {arguments.get('partner_id') if arguments.get('partner_id') is not None else '未指定'}\n"
+            f"内容: {arguments.get('description', '')}"
+        )
     if tool.name == "browser_click":
         return f"ブラウザで「{arguments.get('selector', '')}」をクリックします。"
     if tool.name == "browser_type":

@@ -275,6 +275,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     async def google_oauth_callback(
         code: str | None = None, state: str | None = None, error: str | None = None
     ) -> Any:
+        return await oauth_callback(code, state, error, {"gmail", "google_calendar"})
+
+    @app.get("/api/connectors/freee/oauth/callback")
+    async def freee_oauth_callback(
+        code: str | None = None, state: str | None = None, error: str | None = None
+    ) -> Any:
+        return await oauth_callback(code, state, error, {"freee"})
+
+    async def oauth_callback(code, state, error, allowed: set[str]) -> Any:
         if error or not code or not state:
             return RedirectResponse(url="/?connector_error=1")
         entry = oauth_states.pop(state)
@@ -282,7 +291,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             return RedirectResponse(url="/?connector_error=1")
         connector_id, code_verifier = entry
         connector = connectors.get(connector_id)
-        if connector is None:
+        if connector is None or connector_id not in allowed:
             return RedirectResponse(url="/?connector_error=1")
         try:
             await connector.complete_authorization(code, code_verifier)
