@@ -24,7 +24,7 @@ Phase 0 と、Phase 1 のプロセス内スケジューラまでです。`./scri
 - **ルーティン。** SQLite に cron か間隔を保存し、同じプロセスの APScheduler がエージェントを呼ぶ。ブラウザのタブを閉じても、プロセスが生きていれば実行され、結果は会話に残る。確認が必要な操作は「確認待ち」になる。
 - **テスト。** プロバイダ変換、ツール登録、モック LLM のループ、SQLite の記憶、ルーティン。`uv run pytest`。
 
-まだないのは、ターミナルを閉じても残る Windows サービス、OS 通知、コネクタ、トレイアプリ、エージェント専用の仮想マシン、複数エージェント、OSS としての公開物、有料のホスト版です。
+サーバーのプロセスが動いているあいだのルーティンは入りました。Gmail と Google カレンダーも OAuth 連携として入りました（下の Phase 2 を参照）。まだないのは、ターミナルを閉じても残る Windows サービス、OS 通知、トレイアプリ、エージェント専用の仮想マシン、複数エージェント、OSS としての公開物、有料のホスト版です。
 
 ## 目指す姿（共通の5本柱）
 
@@ -62,14 +62,15 @@ flowchart LR
 
 残しているのは、ターミナルを閉じてもプロセスが生きる Windows サービスと、OS の通知です。どちらも Phase 3 のトレイアプリと一緒に足します。それまでは `./scripts/run.sh` を起動したままにします。
 
-### Phase 2 — コネクタ
+### Phase 2 — コネクタ（Gmail と Google カレンダーまで完了）
 
 個人のアシスタントが、日本で普段開いている場所とつながる段階です。業種向けの業務パッケージにはしません。
 
-- Gmail と Google カレンダー。OAuth。トークンはローカルの秘密置き場に置き、git には入れない。
-- 日本で差がつく接続。LINE、Chatwork、freee、楽天。メールと予定と同じツールの形で足す。
-- 読み取りは、確認が重すぎない範囲で実行する。予定の参照や受信の要約は、送ることより軽い。
-- 外へ出る操作は、先に下書きを作る。メールの宛先と本文、送るメッセージ、記帳、購入を確認ダイアログに出し、許可のあとで実行する。リスクは `Risk.EXTERNAL`。ループにサービス専用の分岐は足さない。
+- Gmail と Google カレンダー。OAuth 2.0（PKCE つきの authorization code フロー）。トークンは `data/connectors/` に置き、git には入れない。接続・切断はサイドバーの「連携」画面から行う。
+- 読み取り（検索・一覧・空き時間確認）は確認なしで実行する。`Risk.READ`。下書き作成も確認なし（`Risk.WRITE`）。
+- 外へ出るメール送信（`gmail_send_email`）と、予定の作成・更新・削除（`calendar_create_event` など）は `Risk.EXTERNAL`。宛先・件名・本文や予定の内容を確認ダイアログに出し、許可のあとで実行する。ルーティンから呼ばれたときも同じゲートで止まる。
+- 連携していない、または未設定のコネクタのツールはモデルに見せない。
+- LINE、Chatwork、freee、楽天は、同じ `Connector` インターフェースのパターンで後から足す。いまはまだ実装していない。
 
 ### Phase 3 — デスクトップアプリ
 
@@ -136,7 +137,7 @@ flowchart LR
 | --- | --- |
 | Phase 0（完了） | キー 1 つ、または demo で `./scripts/run.sh` が 8741 を開く。`uv run pytest` が通る。 |
 | Phase 1（スケジューラまで完了） | サーバーが動いていれば、ブラウザを閉じても「毎朝 8 時にニュース要約」が会話に残る。ターミナルを閉じたあとも生かす Windows サービスは Phase 3。 |
-| Phase 2 | カレンダーの予定をチャットから読める。メールは下書きまで作り、確認で許可したときだけ送信される。LINE、Chatwork、freee、楽天のうち少なくとも 1 つが、同じ確認ゲートで外へ出る。 |
+| Phase 2（Gmail と Google カレンダーまで完了） | カレンダーの予定をチャットから読める。メールは下書きまで作り、確認で許可したときだけ送信される。LINE、Chatwork、freee、楽天のうち少なくとも 1 つが、同じ確認ゲートで外へ出る。 |
 | Phase 3 | ログイン時に起動し、ウィンドウを閉じてもトレイに残る。ルーティンの結果が OS の通知になる。 |
 | Phase 4 | 再起動してもブラウザのログインと作業ファイルが残る。所有者はその画面を見て、途中で止められる。 |
 | Phase 5 | 調べる役とまとめる役が 1 つの依頼で引き継ぐ。保存したスキルを、翌日のルーティンから呼べる。 |
@@ -155,7 +156,7 @@ A paid hosted version comes later: no install, routines that keep running while 
 
 A local agent loop with a step cap and server-sent tool steps. Pluggable Gemini, OpenAI, Claude, and an OpenAI-compatible endpoint such as Ollama, plus a keyless demo model. DuckDuckGo search, page fetch with a URL guard, and a Playwright browser whose clicks and typing wait on a confirmation dialog. SQLite conversations, short facts, and scheduled routines. A Japanese React chat. `./scripts/run.sh` serves the API and the UI on one port. Tests cover providers, the tool registry, the loop, memory, and routines.
 
-Routines run from an APScheduler tick inside the FastAPI process, including when the browser tab is closed. A run that needs confirmation stays `waiting_confirmation` until someone approves it. Not built yet: a Windows service or tray process, OS notifications, connectors, a persistent VM, specialist agents, the open-source release checklist, and the paid host. `Risk.EXTERNAL` is reserved for anything that leaves the machine, and no tool uses it yet. The confirmation gate is in memory. The browser profile does not survive a restart. There is no token streaming and no retrieved long-term memory.
+Routines run from an APScheduler tick inside the FastAPI process, including when the browser tab is closed. A run that needs confirmation stays `waiting_confirmation` until someone approves it. Gmail and Google Calendar connect through OAuth from a sidebar panel (see Phase 2 below). Not built yet: a Windows service or tray process, OS notifications, a persistent VM, specialist agents, the open-source release checklist, and the paid host. `Risk.EXTERNAL` now covers mail and calendar writes; nothing else uses it yet. The confirmation gate is in memory. The browser profile does not survive a restart. There is no token streaming and no retrieved long-term memory.
 
 ### Five pillars
 
@@ -169,7 +170,7 @@ Routines run from an APScheduler tick inside the FastAPI process, including when
 
 Phase 0, the foundation, is done. Phase 1's scheduler is done: "summarize the news at 8:00 every morning" runs while the server process is up, and the result is waiting in chat. A Windows service that survives a closed terminal remains part of Phase 3.
 
-Phase 2 is connectors. Gmail and Google Calendar through OAuth, with tokens kept out of git, plus LINE, Chatwork, freee, and Rakuten. Outbound mail, messages, bookings, and purchases are drafts until the existing `Risk.EXTERNAL` gate is approved. Success: a calendar read works from chat, unapproved mail is never sent, and at least one of the Japan-specific connectors sends only after confirmation.
+Phase 2's Gmail and Google Calendar connectors are in. OAuth 2.0 with PKCE; tokens live under `data/connectors/` and stay out of git; connect and disconnect happen from the sidebar's connectors panel. Reading mail and calendar, and creating a draft, run without confirmation (`Risk.READ`/`Risk.WRITE`). Sending mail (`gmail_send_email`) and creating, updating, or deleting events (`calendar_create_event` and friends) are `Risk.EXTERNAL` and always wait on the same confirmation gate, including from routines. Tools for a connector that is not configured or not connected are simply not offered to the model. LINE, Chatwork, freee, and Rakuten come after this, through the same `Connector` interface. Success: calendar reads work from chat, and unapproved mail is never sent — both hold today.
 
 Phase 3 wraps the current web UI in Electron or Tauri. Tray, login auto-start, OS notifications. FastAPI stays the backend. Success: the window can close and the process remains, and a routine raises an OS notification.
 

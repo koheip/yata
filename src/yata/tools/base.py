@@ -37,6 +37,7 @@ class ToolContext:
     browser: Any
     artifacts_dir: Any
     allow_private_urls: bool
+    connectors: Any = None
 
 
 @dataclass
@@ -56,6 +57,7 @@ class Tool(ABC):
     description: str
     parameters: dict[str, Any]
     risk: Risk = Risk.READ
+    required_connector: str | None = None
 
     def spec(self) -> ToolSpec:
         return ToolSpec(name=self.name, description=self.description, parameters=self.parameters)
@@ -104,6 +106,7 @@ class ToolContextFactory:
     browser: Any
     artifacts_dir: Any
     allow_private_urls: bool
+    connectors: Any = None
 
     def for_conversation(self, conversation_id: str) -> ToolContext:
         return ToolContext(
@@ -112,4 +115,5 @@ class ToolContextFactory:
             browser=self.browser,
             artifacts_dir=self.artifacts_dir,
             allow_private_urls=self.allow_private_urls,
+            connectors=self.connectors,
         )

@@ -42,6 +42,12 @@ class Settings(BaseSettings):
     yata_timezone: str = "Asia/Tokyo"
     yata_routine_confirm_timeout: float = Field(default=86_400, ge=1, le=604_800)
 
+    # Google 連携（Gmail / カレンダー）。どちらも未設定なら連携は「未設定」のままで、
+    # ツールはモデルに提示されない。
+    google_oauth_client_id: str | None = None
+    google_oauth_client_secret: str | None = None
+    google_oauth_client_secret_file: str | None = None
+
     def database_path(self) -> Path:
         return Path(self.yata_db)
 

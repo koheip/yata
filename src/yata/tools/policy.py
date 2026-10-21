@@ -25,6 +25,24 @@ def describe_action(tool: Tool, arguments: dict) -> str:
         text = arguments.get("text", "")
         selector = arguments.get("selector", "")
         return f"ブラウザの「{selector}」に「{text}」と入力します。{submit}"
+    if tool.name == "gmail_send_email":
+        return (
+            "メールを送信します。\n"
+            f"宛先: {arguments.get('to', '')}\n"
+            f"件名: {arguments.get('subject', '')}\n"
+            f"本文:\n{arguments.get('body', '')}"
+        )
+    if tool.name == "calendar_create_event":
+        return (
+            "カレンダーに予定を作成します。\n"
+            f"件名: {arguments.get('summary', '')}\n"
+            f"開始: {arguments.get('start', '')}\n"
+            f"終了: {arguments.get('end', '')}"
+        )
+    if tool.name == "calendar_update_event":
+        return f"カレンダーの予定（ID: {arguments.get('event_id', '')}）を更新します。引数: {arguments}"
+    if tool.name == "calendar_delete_event":
+        return f"カレンダーの予定（ID: {arguments.get('event_id', '')}）を削除します。"
     if tool.risk == Risk.EXTERNAL:
         return f"外部操作「{tool.name}」を実行します。引数: {arguments}"
     return f"「{tool.name}」を実行します。引数: {arguments}"

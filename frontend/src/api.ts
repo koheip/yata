@@ -1,4 +1,13 @@
-import type { ChatMessage, Conversation, Fact, ModelInfo, Routine, RoutinePreset, ServerEvent } from "./types"
+import type {
+  ChatMessage,
+  Connector,
+  Conversation,
+  Fact,
+  ModelInfo,
+  Routine,
+  RoutinePreset,
+  ServerEvent,
+} from "./types"
 
 async function errorMessage(response: Response): Promise<string> {
   try {
@@ -78,6 +87,18 @@ export function resumeRoutine(id: string) {
 
 export function deleteRoutine(id: string) {
   return request<void>(`/api/routines/${id}`, { method: "DELETE" })
+}
+
+export function listConnectors() {
+  return request<{ connectors: Connector[] }>("/api/connectors")
+}
+
+export function connectConnector(id: string) {
+  return request<{ authorize_url: string }>(`/api/connectors/${id}/connect`, { method: "POST" })
+}
+
+export function disconnectConnector(id: string) {
+  return request<Connector>(`/api/connectors/${id}/disconnect`, { method: "POST" })
 }
 
 export function resolveConfirmation(requestId: string, approved: boolean) {

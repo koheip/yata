@@ -4,8 +4,9 @@ import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
 import { cn } from "cn"
+import { ConnectorsSection } from "./Connectors"
 import { RoutinesSection } from "./Routines"
-import type { Conversation, Fact, Routine, RoutinePreset } from "../types"
+import type { Connector, Conversation, Fact, Routine, RoutinePreset } from "../types"
 
 type SidebarProps = {
   conversations: Conversation[]
@@ -22,6 +23,9 @@ type SidebarProps = {
   onCreateRoutine: (input: { name: string; prompt: string; preset?: string; schedule?: string }) => Promise<void>
   onToggleRoutine: (routine: Routine) => Promise<void>
   onDeleteRoutine: (routine: Routine) => Promise<void>
+  connectors: Connector[]
+  onConnectConnector: (connector: Connector) => void
+  onDisconnectConnector: (connector: Connector) => Promise<void>
 }
 
 export function Sidebar({
@@ -39,6 +43,9 @@ export function Sidebar({
   onCreateRoutine,
   onToggleRoutine,
   onDeleteRoutine,
+  connectors,
+  onConnectConnector,
+  onDisconnectConnector,
 }: SidebarProps) {
   return (
     <>
@@ -114,6 +121,8 @@ export function Sidebar({
           onDelete={onDeleteRoutine}
           onOpen={(id) => onSelect(id)}
         />
+        <Separator />
+        <ConnectorsSection connectors={connectors} onConnect={onConnectConnector} onDisconnect={onDisconnectConnector} />
         <Separator />
         <div className="max-h-40 overflow-y-auto px-4 py-3">
           <div className="mb-2 flex items-center justify-between">

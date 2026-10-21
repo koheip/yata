@@ -87,6 +87,15 @@ export type Routine = {
   pending_confirmation: RoutineConfirmation | null
 }
 
+export type ConnectorStatus = "not_configured" | "not_connected" | "connected"
+
+export type Connector = {
+  id: string
+  label: string
+  status: ConnectorStatus
+  setup_instructions: string | null
+}
+
 export type ServerEvent = {
   type: string
   [key: string]: unknown

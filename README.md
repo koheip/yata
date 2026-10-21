@@ -114,12 +114,14 @@ LiteLLM のような単一ラッパーも候補でした。この版では公式
 
 | Risk | 意味 | 既定の扱い |
 | --- | --- | --- |
-| `read` | 検索、ページ読解、スクリーンショット | すぐ実行 |
-| `write` | ローカルな記憶の保存 | すぐ実行 |
+| `read` | 検索、ページ読解、スクリーンショット、Gmail/カレンダーの参照 | すぐ実行 |
+| `write` | ローカルな記憶の保存、Gmail の下書き作成 | すぐ実行 |
 | `mutate` | ブラウザのクリックと入力 | 確認 |
-| `external` | 将来のデスクトップ操作、メール、決済 | 確認 |
+| `external` | デスクトップ操作（未実装）、メール送信、予定の作成・更新・削除、決済 | 確認 |
 
 ループは `ToolPolicy` に聞くだけです。デスクトップ操作を足すときは、同じインターフェースで `Risk.EXTERNAL` のツールを登録します。確認の待ち方は変わりません。PC 全体のマウス操作はこの版の範囲外です。
+
+Gmail とカレンダーのツールは `required_connector` を持ち、対応する連携が「接続済み」でないときはモデルに提示されません（`tools/catalog.py` の `visible_registry()`）。キー未設定やアカウント未接続でもアプリは普通に起動し、該当のツールが見えないだけです。
 
 検索は DuckDuckGo（`ddgs`、API キー不要）です。ページ読解は HTTP で取得し、本文だけを抜きます。リダイレクトのたびに URL を検査します。`169.254.169.254` と `metadata.google.internal` は常に拒否します。プライベートアドレスは `YATA_ALLOW_PRIVATE_URLS` で切り替えます。個人利用の既定は `true` です。公開するときは `false` にします。
 
@@ -136,6 +138,26 @@ LiteLLM のような単一ラッパーも候補でした。この版では公式
 ```
 
 時刻は `YATA_TIMEZONE`（既定 `Asia/Tokyo`）です。サーバーは `./scripts/run.sh` のまま起動しておきます。ターミナルを閉じたあとも生かす Windows サービスや、OS の通知はまだありません。
+
+### 連携（Gmail / Google カレンダー）
+
+サイドバーの「連携」に、Gmail と Google カレンダーの状態（未設定 / 未接続 / 接続済み）と、接続・切断ボタンが出ます。未設定のときは、この画面に設定手順が日本語で表示されます。
+
+設定の流れ（Google Cloud Console）:
+
+1. [Google Cloud Console](https://console.cloud.google.com/) でプロジェクトを作成し、「API とサービス」→「ライブラリ」で **Gmail API** と **Google Calendar API** を有効にします。
+2. 「API とサービス」→「OAuth 同意画面」で、ユーザーの種類を「外部」にし、自分の Google アカウントを「テストユーザー」に追加します（アプリの審査は不要です）。
+3. 「API とサービス」→「認証情報」→「認証情報を作成」→「OAuth クライアント ID」で、アプリケーションの種類に **デスクトップアプリ** を選んで作成します。
+4. 作成したクライアントの `client_secret*.json` をダウンロードします。
+5. `.env` に次のどちらかを設定します。
+   - `GOOGLE_OAUTH_CLIENT_SECRET_FILE` に、ダウンロードした JSON ファイルのパスを書く（推奨）。
+   - または `GOOGLE_OAUTH_CLIENT_ID` と `GOOGLE_OAUTH_CLIENT_SECRET` に、JSON の中の値を直接書く。
+6. サーバーを再起動し、「連携」画面の「接続」を押します。ブラウザが Google の同意画面に移動し、許可すると `http://127.0.0.1:8741` に戻ってきます（この待受けは追加のプロセスを起動せず、ヤタ自身の FastAPI が処理します）。
+7. 「切断」を押すと、ローカルに保存したトークン（`data/connectors/`）が削除されます。
+
+カレンダーの空き時間確認（`calendar_check_free_busy`）には `calendar.events.freebusy` スコープが必要です。このスコープが増える前に Google カレンダーを接続済みの場合は、一度「切断」してから再度「接続」し、新しいスコープで同意し直してください。
+
+メールの送信、予定の作成・更新・削除は、確認ダイアログで内容を見せてから許可したときだけ実行されます。ルーティンから呼ばれた場合も同じで、誰も見ていないときは「確認待ち」のまま止まります。
 
 ### 記憶
 
@@ -162,6 +184,8 @@ LiteLLM のような単一ラッパーも候補でした。この版では公式
 | `YATA_SCHEDULER_ENABLED` | ルーティンのスケジューラ（既定 `true`） |
 | `YATA_SCHEDULER_INTERVAL_SECONDS` | 期限の確認間隔（既定 30 秒） |
 | `YATA_TIMEZONE` | ルーティンの既定タイムゾーン（`Asia/Tokyo`） |
+| `GOOGLE_OAUTH_CLIENT_SECRET_FILE` | ダウンロードした client_secret*.json のパス（推奨） |
+| `GOOGLE_OAUTH_CLIENT_ID` / `GOOGLE_OAUTH_CLIENT_SECRET` | JSON を使わない場合の直接指定 |
 
 ローカルモデルはツール呼び出しに対応したものを選んでください。`ollama pull gemma3` のように入れ、`YATA_OLLAMA_MODEL` をその名前に合わせます。
 
@@ -179,11 +203,12 @@ uv run pytest
 - SQLite の会話、事実、画面用トランスクリプト
 - ルーティンの次回時刻、チャットからの登録、モック LLM での実行と確認待ち
 - デモモデルでの HTTP 一往復
+- 連携: トークンの保存・削除、OAuth の state 検証、Gmail/カレンダーのツールが未接続では隠れること、メール送信・予定の変更が必ず確認を経ること（モックした Google API）
 
 ## ディレクトリ
 
 ```
-src/yata/          エージェント、モデル、ツール、記憶、ルーティン、API
+src/yata/          エージェント、モデル、ツール、記憶、ルーティン、連携、API
 frontend/               チャット UI
 tests/                  上記のテスト
 scripts/run.sh          セットアップ済みなら、これだけで起動
@@ -210,6 +235,8 @@ uv run playwright install chromium   # only for the browser tools
 The built-in `demo` model needs no key. It is there to exercise the real loop and the real tools, and it says so in the UI.
 
 Routines run inside the same process. Add one from the sidebar, or send `毎朝8時にニュースを要約して` in chat. The result is stored in that routine's conversation, so it is there the next time the tab opens. The server has to stay running; closing the browser tab is enough to leave. A Windows service and OS notifications are still later. Risky tools wait for confirmation instead of timing out immediately.
+
+Gmail and Google Calendar connect from the sidebar's 連携 (Connectors) panel, which shows each one as not configured, not connected, or connected, with setup instructions in Japanese when no OAuth client is set. Create a Desktop-app OAuth client in Google Cloud Console (see the Japanese section above for the exact steps), point `GOOGLE_OAUTH_CLIENT_SECRET_FILE` or `GOOGLE_OAUTH_CLIENT_ID`/`GOOGLE_OAUTH_CLIENT_SECRET` at it, and press Connect. The OAuth loopback callback is handled by this same FastAPI process on `127.0.0.1:8741`; no extra server is started. Gmail search, read, and drafting and Calendar listing and free/busy checks run immediately (`Risk.READ`/`Risk.WRITE`). Sending mail and creating, updating, or deleting events are `Risk.EXTERNAL` and always wait on the same ConfirmationGate as everything else, including from routines. Tokens live under `data/connectors/`, never in git, and the connector tools simply are not offered to the model until the account is connected.
 
 ### Stack
 

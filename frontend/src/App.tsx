@@ -29,6 +29,11 @@ export default function App() {
         onCreateRoutine={assistant.addRoutine}
         onToggleRoutine={assistant.toggleRoutine}
         onDeleteRoutine={assistant.removeRoutine}
+        connectors={assistant.connectors}
+        onConnectConnector={(connector) => {
+          void assistant.connectToConnector(connector)
+        }}
+        onDisconnectConnector={(connector) => assistant.disconnectFromConnector(connector)}
       />
       <main className="flex min-w-0 flex-1 flex-col">
         <header className="flex items-center gap-3 border-b border-border px-3 py-3 md:px-5">

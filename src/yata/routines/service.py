@@ -8,12 +8,14 @@ from datetime import UTC, datetime
 
 from yata.agent.loop import run_agent, seal_open_tool_calls
 from yata.confirm.gate import ConfirmationGate
+from yata.connectors.base import ConnectorRegistry
 from yata.llm.types import LLMMessage, LLMProvider, ProviderError
 from yata.memory.store import MemoryStore, clip_title
 from yata.prompts import build_system_prompt
 from yata.routines.repository import Routine, RoutineRepository, RoutineRun
 from yata.routines.schedule import ScheduleError, next_run, resolve_schedule
 from yata.tools.base import ToolContextFactory
+from yata.tools.catalog import visible_registry
 from yata.tools.policy import ToolPolicy
 from yata.tools.registry import ToolRegistry
 
@@ -37,6 +39,7 @@ class RoutineService:
         max_steps: int,
         confirm_timeout: float,
         default_timezone: str,
+        connectors: ConnectorRegistry | None = None,
     ):
         self.memory = memory
         self.routines = routines
@@ -49,6 +52,7 @@ class RoutineService:
         self.max_steps = max_steps
         self.confirm_timeout = confirm_timeout
         self.default_timezone = default_timezone
+        self.connectors = connectors
         self._tasks: dict[str, asyncio.Task[None]] = {}
 
     def create(
@@ -173,12 +177,14 @@ class RoutineService:
                 browser=self.browser,
                 artifacts_dir=self.artifacts_dir,
                 allow_private_urls=self.allow_private_urls,
+                connectors=self.connectors,
             ).for_conversation(conversation_id)
+            active_registry = visible_registry(self.registry, self.connectors)
             async for event in run_agent(
                 messages=messages,
                 provider=provider,
                 model=upstream,
-                registry=self.registry,
+                registry=active_registry,
                 policy=ToolPolicy(),
                 gate=self.gate,
                 ctx=ctx,

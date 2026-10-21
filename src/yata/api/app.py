@@ -13,13 +13,23 @@ from typing import Any
 import httpx
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, StreamingResponse
+from fastapi.responses import (
+    FileResponse,
+    HTMLResponse,
+    JSONResponse,
+    RedirectResponse,
+    StreamingResponse,
+)
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from yata.agent.loop import run_agent, seal_open_tool_calls
 from yata.config import Settings
 from yata.confirm.gate import InMemoryConfirmationGate
+from yata.connectors.base import Connector, ConnectorState
+from yata.connectors.catalog import build_connector_registry
+from yata.connectors.oauth_state import OAuthStateStore
+from yata.connectors.pkce import challenge_for, new_verifier
 from yata.llm.openai_provider import ollama_root
 from yata.llm.router import ModelInfo, ModelRouter
 from yata.llm.types import LLMMessage, ProviderError
@@ -36,7 +46,7 @@ from yata.routines.scheduler import RoutineScheduler
 from yata.routines.service import RoutineService
 from yata.tools.base import ToolContextFactory
 from yata.tools.browser import BrowserSession
-from yata.tools.catalog import build_registry
+from yata.tools.catalog import build_registry, visible_registry
 from yata.tools.policy import ToolPolicy
 
 logger = logging.getLogger(__name__)
@@ -78,6 +88,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     browser = BrowserSession()
     gate = InMemoryConfirmationGate()
     registry = build_registry()
+    connectors = build_connector_registry(settings)
+    oauth_states = OAuthStateStore()
     model_router = ModelRouter(settings)
     artifacts = settings.artifacts_dir()
     routine_repo = RoutineRepository(settings.database_path())
@@ -93,6 +105,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         max_steps=settings.yata_max_steps,
         confirm_timeout=settings.yata_routine_confirm_timeout,
         default_timezone=settings.yata_timezone,
+        connectors=connectors,
     )
     scheduler = (
         RoutineScheduler(routines, settings.yata_scheduler_interval_seconds)
@@ -129,6 +142,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.browser = browser
     app.state.gate = gate
     app.state.registry = registry
+    app.state.connectors = connectors
     app.state.model_router = model_router
     app.state.artifacts = artifacts
     app.state.routines = routines
@@ -241,6 +255,50 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         if not routine_repo.delete(routine_id):
             raise HTTPException(status_code=404, detail="ルーティンが見つかりません。")
 
+    @app.get("/api/connectors")
+    def list_connectors() -> dict[str, Any]:
+        return {"connectors": [_connector_dict(item) for item in connectors.list()]}
+
+    @app.post("/api/connectors/{connector_id}/connect")
+    def connect_connector(connector_id: str) -> dict[str, Any]:
+        connector = connectors.get(connector_id)
+        if connector is None:
+            raise HTTPException(status_code=404, detail="連携が見つかりません。")
+        if connector.status() == ConnectorState.NOT_CONFIGURED:
+            raise HTTPException(status_code=400, detail="この連携はまだ設定されていません。")
+        verifier = new_verifier()
+        state = oauth_states.open(connector_id, verifier)
+        url = connector.authorize_url(state, challenge_for(verifier))
+        return {"authorize_url": url}
+
+    @app.get("/api/connectors/google/oauth/callback")
+    async def google_oauth_callback(
+        code: str | None = None, state: str | None = None, error: str | None = None
+    ) -> Any:
+        if error or not code or not state:
+            return RedirectResponse(url="/?connector_error=1")
+        entry = oauth_states.pop(state)
+        if entry is None:
+            return RedirectResponse(url="/?connector_error=1")
+        connector_id, code_verifier = entry
+        connector = connectors.get(connector_id)
+        if connector is None:
+            return RedirectResponse(url="/?connector_error=1")
+        try:
+            await connector.complete_authorization(code, code_verifier)
+        except Exception:
+            logger.exception("oauth exchange failed for %s", connector_id)
+            return RedirectResponse(url="/?connector_error=1")
+        return RedirectResponse(url=f"/?connector_connected={connector_id}")
+
+    @app.post("/api/connectors/{connector_id}/disconnect")
+    def disconnect_connector(connector_id: str) -> dict[str, Any]:
+        connector = connectors.get(connector_id)
+        if connector is None:
+            raise HTTPException(status_code=404, detail="連携が見つかりません。")
+        connector.disconnect()
+        return _connector_dict(connector)
+
     @app.post("/api/confirmations/{request_id}")
     def resolve_confirmation(request_id: str, body: ResolveConfirmation) -> dict[str, bool]:
         found = gate.resolve(request_id, body.approved)
@@ -315,7 +373,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             browser=browser,
             artifacts_dir=artifacts,
             allow_private_urls=settings.yata_allow_private_urls,
+            connectors=connectors,
         ).for_conversation(conversation_id)
+        active_registry = visible_registry(registry, connectors)
 
         async def generate():
             try:
@@ -323,7 +383,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                     messages=llm_messages,
                     provider=provider,
                     model=upstream,
-                    registry=registry,
+                    registry=active_registry,
                     policy=ToolPolicy(),
                     gate=gate,
                     ctx=ctx,
@@ -501,6 +561,16 @@ def _pending_dict(run: RoutineRun | None) -> dict[str, Any] | None:
         "risk": run.confirmation_risk or "",
         "summary": run.confirmation_summary or run.snippet,
         "arguments": run.confirmation_arguments or {},
+    }
+
+
+def _connector_dict(connector: Connector) -> dict[str, Any]:
+    status = connector.status()
+    return {
+        "id": connector.id,
+        "label": connector.label,
+        "status": status.value,
+        "setup_instructions": connector.setup_instructions if status == ConnectorState.NOT_CONFIGURED else None,
     }
 
 

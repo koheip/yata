@@ -1,12 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import {
+  connectConnector,
   createConversation,
   createRoutine,
   deleteConversation,
   deleteFact,
   deleteRoutine,
+  disconnectConnector,
   fetchModels,
   getConversation,
+  listConnectors,
   listConversations,
   listFacts,
   listRoutines,
@@ -18,6 +21,7 @@ import {
 import type {
   ChatMessage,
   ConfirmRequest,
+  Connector,
   Conversation,
   Fact,
   ModelInfo,
@@ -49,6 +53,7 @@ export function useAssistant() {
   const [facts, setFacts] = useState<Fact[]>([])
   const [routines, setRoutines] = useState<Routine[]>([])
   const [presets, setPresets] = useState<RoutinePreset[]>([])
+  const [connectors, setConnectors] = useState<Connector[]>([])
   const [draft, setDraft] = useState("")
   const [streaming, setStreaming] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -68,15 +73,17 @@ export function useAssistant() {
   streamingRef.current = streaming
 
   const refreshLists = useCallback(async () => {
-    const [conversationData, factData, routineData] = await Promise.all([
+    const [conversationData, factData, routineData, connectorData] = await Promise.all([
       listConversations(),
       listFacts(),
       listRoutines(),
+      listConnectors(),
     ])
     setConversations(conversationData.conversations)
     setFacts(factData.facts)
     setRoutines(routineData.routines)
     setPresets(routineData.presets)
+    setConnectors(connectorData.connectors)
     const pending = routineData.routines.find((item) => item.pending_confirmation)?.pending_confirmation
     if (pending && !surfacedConfirms.current.has(pending.request_id) && !confirmResolver.current) {
       surfacedConfirms.current.add(pending.request_id)
@@ -325,6 +332,20 @@ export function useAssistant() {
     await refreshLists()
   }
 
+  async function connectToConnector(connector: Connector) {
+    try {
+      const { authorize_url: authorizeUrl } = await connectConnector(connector.id)
+      window.location.href = authorizeUrl
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "連携の接続に失敗しました。")
+    }
+  }
+
+  async function disconnectFromConnector(connector: Connector) {
+    await disconnectConnector(connector.id)
+    await refreshLists()
+  }
+
   return {
     models,
     modelId,
@@ -355,5 +376,8 @@ export function useAssistant() {
     addRoutine,
     toggleRoutine,
     removeRoutine,
+    connectors,
+    connectToConnector,
+    disconnectFromConnector,
   }
 }

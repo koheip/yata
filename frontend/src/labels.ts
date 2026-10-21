@@ -7,6 +7,15 @@ export const TOOL_LABELS: Record<string, string> = {
   browser_type: "入力",
   browser_screenshot: "スクリーンショット",
   save_memory: "記憶に残す",
+  gmail_search: "Gmail検索",
+  gmail_read: "メールを読む",
+  gmail_create_draft: "下書き作成",
+  gmail_send_email: "メール送信",
+  calendar_list_events: "予定を調べる",
+  calendar_check_free_busy: "空き時間を確認",
+  calendar_create_event: "予定を作成",
+  calendar_update_event: "予定を更新",
+  calendar_delete_event: "予定を削除",
 }
 
 export function toolLabel(name: string): string {

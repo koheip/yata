@@ -45,11 +45,26 @@ def test_default_catalog_has_the_mvp_tools() -> None:
         "browser_type",
         "browser_screenshot",
         "save_memory",
+        "gmail_search",
+        "gmail_read",
+        "gmail_create_draft",
+        "gmail_send_email",
+        "calendar_list_events",
+        "calendar_check_free_busy",
+        "calendar_create_event",
+        "calendar_update_event",
+        "calendar_delete_event",
     ]
     assert registry.get("browser_click").risk == Risk.MUTATE
     assert registry.get("browser_type").risk == Risk.MUTATE
     assert registry.get("web_search").risk == Risk.READ
     assert registry.get("save_memory").risk == Risk.WRITE
+    assert registry.get("gmail_search").risk == Risk.READ
+    assert registry.get("gmail_create_draft").risk == Risk.WRITE
+    assert registry.get("gmail_send_email").risk == Risk.EXTERNAL
+    assert registry.get("calendar_list_events").risk == Risk.READ
+    assert registry.get("calendar_create_event").risk == Risk.EXTERNAL
+    assert registry.get("calendar_delete_event").risk == Risk.EXTERNAL
 
 
 def test_policy_confirms_mutate_and_external_only() -> None:

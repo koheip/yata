@@ -38,3 +38,6 @@ class ToolRegistry:
 
     def names(self) -> list[str]:
         return list(self._tools)
+
+    def tools(self) -> list[Tool]:
+        return list(self._tools.values())
