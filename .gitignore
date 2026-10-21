@@ -6,6 +6,10 @@ __pycache__/
 .mypy_cache/
 .env
 data/
+*.db
+*.sqlite
+*.sqlite3
+*.tsbuildinfo
 *.egg-info/
 dist/
 build/

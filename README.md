@@ -192,7 +192,7 @@ scripts/run.sh          セットアップ済みなら、これだけで起動
 
 ## ロードマップ
 
-先の計画は [ROADMAP.md](ROADMAP.md) に分けてあります。いまの版は Phase 0（土台）です。次に着手するのは、ブラウザを閉じていても動く常駐とルーティンです。Grok Bot、Meta Muse、OpenAI Dots と同じ種類の個人エージェントへ向かう段階、各段階の成功条件、当面やらないこともそこに書いてあります。
+先の計画は [ROADMAP.md](ROADMAP.md) に分けてあります。Phase 0 と、Phase 1 のプロセス内ルーティンまで入っています。ヤタは汎用の個人アシスタントで、最初の公開は自分の PC で動くオープンソースです。段階、成功条件、当面やらないことはロードマップに書いてあります。
 
 ## English
 
@@ -223,4 +223,4 @@ Search uses DuckDuckGo via `ddgs` (no key). Page reading checks every redirect. 
 
 ### Roadmap
 
-The longer plan is in [ROADMAP.md](ROADMAP.md). This repository is Phase 0. The recommended next step is an always-on process and scheduled routines, on the way toward a Grok Bot, Meta Muse, and OpenAI Dots class of personal agent.
+The longer plan is in [ROADMAP.md](ROADMAP.md). Phase 0 and the in-process routines of Phase 1 are done. Yata is a general-purpose personal assistant. The first public release is the local open-source app, with a paid host later.
