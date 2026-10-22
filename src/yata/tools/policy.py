@@ -18,6 +18,8 @@ class ToolPolicy:
 
 
 def describe_action(tool: Tool, arguments: dict) -> str:
+    if tool.name == "line_push_message":
+        return f"自分の LINE にメッセージを送信します。\n本文:\n{arguments.get('text', '')}"
     if tool.name == "freee_create_expense_deal":
         amount = arguments.get("amount", 0)
         formatted = f"{amount:,}" if type(amount) is int else str(amount)

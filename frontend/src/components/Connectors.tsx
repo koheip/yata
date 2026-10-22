@@ -28,6 +28,7 @@ export function ConnectorsSection({ connectors, onConnect, onDisconnect }: Conne
                 {statusLabel(connector.status)}
               </Badge>
             </div>
+            {connector.note ? <p className="mt-1 text-xs text-muted-foreground">{connector.note}</p> : null}
             {connector.status === "not_configured" ? (
               connector.setup_instructions ? (
                 <p className="mt-1 whitespace-pre-wrap text-xs text-muted-foreground">

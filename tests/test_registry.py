@@ -67,6 +67,7 @@ def test_default_catalog_has_the_mvp_tools() -> None:
         "freee_list_invoices",
         "freee_get_trial_balance",
         "freee_create_expense_deal",
+        "line_push_message",
     ]
     assert registry.get("browser_click").risk == Risk.MUTATE
     assert registry.get("browser_type").risk == Risk.MUTATE

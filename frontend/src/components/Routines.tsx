@@ -18,6 +18,7 @@ type RoutinesProps = {
   presets: RoutinePreset[]
   onCreate: (input: { name: string; prompt: string; preset?: string; schedule?: string }) => Promise<void>
   onToggle: (routine: Routine) => Promise<void>
+  onToggleLine: (routine: Routine) => Promise<void>
   onDelete: (routine: Routine) => Promise<void>
   onOpen: (conversationId: string) => void
 }
@@ -48,7 +49,7 @@ function statusLabel(status: string | null): string | null {
   return null
 }
 
-export function RoutinesSection({ routines, presets, onCreate, onToggle, onDelete, onOpen }: RoutinesProps) {
+export function RoutinesSection({ routines, presets, onCreate, onToggle, onToggleLine, onDelete, onOpen }: RoutinesProps) {
   const [open, setOpen] = useState(false)
   const [name, setName] = useState("")
   const [prompt, setPrompt] = useState("")
@@ -119,6 +120,9 @@ export function RoutinesSection({ routines, presets, onCreate, onToggle, onDelet
                 <div className="mt-1 flex gap-1">
                   <Button type="button" size="xs" variant="ghost" onClick={() => void onToggle(routine)}>
                     {routine.enabled ? "停止" : "再開"}
+                  </Button>
+                  <Button type="button" size="xs" variant="ghost" onClick={() => void onToggleLine(routine)}>
+                    {routine.notify_line ? "LINE通知: オン" : "LINE通知: オフ"}
                   </Button>
                   <Button
                     type="button"

@@ -22,6 +22,7 @@ export const TOOL_LABELS: Record<string, string> = {
   calendar_create_event: "予定を作成",
   calendar_update_event: "予定を更新",
   calendar_delete_event: "予定を削除",
+  line_push_message: "LINE に送信",
 }
 
 export function toolLabel(name: string): string {

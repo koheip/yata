@@ -30,6 +30,8 @@ from yata.connectors.base import Connector, ConnectorState
 from yata.connectors.catalog import build_connector_registry
 from yata.connectors.oauth_state import OAuthStateStore
 from yata.connectors.pkce import challenge_for, new_verifier
+from yata.line.bridge import LineBridge
+from yata.line.client import LineClient
 from yata.llm.openai_provider import ollama_root
 from yata.llm.router import ModelInfo, ModelRouter
 from yata.llm.types import LLMMessage, ProviderError
@@ -72,7 +74,12 @@ class ResolveConfirmation(BaseModel):
     approved: bool
 
 
+class SetRoutineNotifyLine(BaseModel):
+    enabled: bool
+
+
 class CreateRoutine(BaseModel):
+    notify_line: bool = False
     name: str = Field(min_length=1, max_length=80)
     prompt: str = Field(min_length=1, max_length=8000)
     preset: str | None = None
@@ -92,6 +99,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     oauth_states = OAuthStateStore()
     model_router = ModelRouter(settings)
     artifacts = settings.artifacts_dir()
+    line = connectors.get("line")
+    line_bridge = (
+        LineBridge(memory, model_router, registry, gate, connectors, settings, browser, artifacts,
+                   LineClient(settings.line_channel_access_token.strip()))
+        if line is not None and line.status() == ConnectorState.CONNECTED else None
+    )
     routine_repo = RoutineRepository(settings.database_path())
     routines = RoutineService(
         memory=memory,
@@ -106,6 +119,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         confirm_timeout=settings.yata_routine_confirm_timeout,
         default_timezone=settings.yata_timezone,
         connectors=connectors,
+        notifier=line_bridge.push_to_owner if line_bridge is not None else None,
     )
     scheduler = (
         RoutineScheduler(routines, settings.yata_scheduler_interval_seconds)
@@ -120,6 +134,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         try:
             yield
         finally:
+            if app.state.line_bridge is not None:
+                await app.state.line_bridge.close()
             if scheduler is not None:
                 await scheduler.stop()
             await browser.close()
@@ -146,6 +162,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.model_router = model_router
     app.state.artifacts = artifacts
     app.state.routines = routines
+    app.state.line_bridge = line_bridge
 
     @app.get("/api/health")
     def health() -> dict[str, Any]:
@@ -231,10 +248,18 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 schedule=body.schedule,
                 schedule_kind=body.schedule_kind,
                 timezone=body.timezone,
+                notify_line=body.notify_line,
             )
         except ScheduleError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
         return _routine_dict(routine, routine_repo)
+
+    @app.post("/api/routines/{routine_id}/notify_line")
+    def set_routine_notify_line(routine_id: str, body: SetRoutineNotifyLine) -> dict[str, Any]:
+        updated = routine_repo.set_notify_line(routine_id, body.enabled)
+        if updated is None:
+            raise HTTPException(status_code=404, detail="ルーティンが見つかりません。")
+        return _routine_dict(updated, routine_repo)
 
     @app.post("/api/routines/{routine_id}/pause")
     def pause_routine(routine_id: str) -> dict[str, Any]:
@@ -540,6 +565,7 @@ def _routine_dict(routine: Routine, repo: RoutineRepository) -> dict[str, Any]:
         "schedule_label": schedule_label(routine.schedule_kind, routine.schedule, routine.timezone),
         "timezone": routine.timezone,
         "enabled": routine.enabled,
+        "notify_line": routine.notify_line,
         "last_run": routine.last_run,
         "next_run": routine.next_run,
         "model_id": routine.model_id,
@@ -579,6 +605,7 @@ def _connector_dict(connector: Connector) -> dict[str, Any]:
         "id": connector.id,
         "label": connector.label,
         "auth_kind": connector.auth_kind,
+        "note": connector.status_note(),
         "status": status.value,
         "setup_instructions": connector.setup_instructions if status == ConnectorState.NOT_CONFIGURED else None,
     }

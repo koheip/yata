@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from collections.abc import Awaitable, Callable
 from datetime import UTC, datetime
 
 from yata.agent.loop import run_agent, seal_open_tool_calls
@@ -40,6 +41,7 @@ class RoutineService:
         confirm_timeout: float,
         default_timezone: str,
         connectors: ConnectorRegistry | None = None,
+        notifier: Callable[[str], Awaitable[bool]] | None = None,
     ):
         self.memory = memory
         self.routines = routines
@@ -53,6 +55,7 @@ class RoutineService:
         self.confirm_timeout = confirm_timeout
         self.default_timezone = default_timezone
         self.connectors = connectors
+        self.notifier = notifier
         self._tasks: dict[str, asyncio.Task[None]] = {}
 
     def create(
@@ -66,6 +69,7 @@ class RoutineService:
         schedule_kind: str | None = None,
         timezone: str | None = None,
         now: datetime | None = None,
+        notify_line: bool = False,
     ) -> Routine:
         zone = timezone or self.default_timezone
         kind, expression = resolve_schedule(
@@ -88,6 +92,7 @@ class RoutineService:
             model_id=model_id,
             conversation_id=conversation.id,
             now=now,
+            notify_line=notify_line,
         )
 
     async def recover(self) -> None:
@@ -227,6 +232,11 @@ class RoutineService:
             if not snippet:
                 snippet = "応答が空でした。"
             self.routines.finish_run(run.id, status=status, snippet=snippet)
+            if fresh.notify_line and self.notifier:
+                try:
+                    await self.notifier(f"【ルーティン】{fresh.name}\n{snippet}")
+                except Exception:
+                    logger.exception("ルーティンの LINE 通知に失敗しました")
 
     def _resolve(self, model_id: str) -> tuple[LLMProvider, str]:
         provider, upstream = self.router.resolve(model_id)

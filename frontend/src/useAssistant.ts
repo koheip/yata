@@ -16,6 +16,7 @@ import {
   pauseRoutine,
   resolveConfirmation,
   resumeRoutine,
+  setRoutineNotifyLine,
   streamMessage,
 } from "./api"
 import type {
@@ -327,6 +328,11 @@ export function useAssistant() {
     await refreshLists()
   }
 
+  async function toggleRoutineLine(routine: Routine) {
+    await setRoutineNotifyLine(routine.id, !routine.notify_line)
+    await refreshLists()
+  }
+
   async function removeRoutine(routine: Routine) {
     await deleteRoutine(routine.id)
     await refreshLists()
@@ -375,6 +381,7 @@ export function useAssistant() {
     removeFact,
     addRoutine,
     toggleRoutine,
+    toggleRoutineLine,
     removeRoutine,
     connectors,
     connectToConnector,

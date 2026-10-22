@@ -77,6 +77,13 @@ export function createRoutine(body: {
   })
 }
 
+export function setRoutineNotifyLine(id: string, enabled: boolean) {
+  return request<Routine>(`/api/routines/${id}/notify_line`, {
+    method: "POST",
+    body: JSON.stringify({ enabled }),
+  })
+}
+
 export function pauseRoutine(id: string) {
   return request<Routine>(`/api/routines/${id}/pause`, { method: "POST" })
 }

@@ -39,6 +39,7 @@ from yata.tools.gmail import (
     GmailSearchTool,
     GmailSendEmailTool,
 )
+from yata.tools.line import LinePushMessageTool
 from yata.tools.memory_tool import SaveMemoryTool
 from yata.tools.rakuten import RakutenItemRankingTool, RakutenSearchItemsTool
 from yata.tools.registry import ToolRegistry
@@ -81,6 +82,7 @@ def build_registry(
     registry.register(FreeeListInvoicesTool())
     registry.register(FreeeGetTrialBalanceTool())
     registry.register(FreeeCreateExpenseDealTool())
+    registry.register(LinePushMessageTool())
     return registry
 
 

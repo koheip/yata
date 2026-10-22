@@ -77,6 +77,7 @@ export type Routine = {
   schedule_label: string
   timezone: string
   enabled: boolean
+  notify_line: boolean
   last_run: string | null
   next_run: string | null
   model_id: string
@@ -95,6 +96,7 @@ export type Connector = {
   auth_kind: "oauth" | "token"
   status: ConnectorStatus
   setup_instructions: string | null
+  note?: string | null
 }
 
 export type ServerEvent = {

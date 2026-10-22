@@ -28,6 +28,7 @@ export default function App() {
         presets={assistant.presets}
         onCreateRoutine={assistant.addRoutine}
         onToggleRoutine={assistant.toggleRoutine}
+        onToggleRoutineLine={assistant.toggleRoutineLine}
         onDeleteRoutine={assistant.removeRoutine}
         connectors={assistant.connectors}
         onConnectConnector={(connector) => {

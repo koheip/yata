@@ -28,6 +28,7 @@ class Routine:
     conversation_id: str
     created_at: str
     updated_at: str
+    notify_line: bool = False
 
 
 @dataclass
@@ -75,7 +76,8 @@ class RoutineRepository:
                     model_id TEXT NOT NULL,
                     conversation_id TEXT NOT NULL,
                     created_at TEXT NOT NULL,
-                    updated_at TEXT NOT NULL
+                    updated_at TEXT NOT NULL,
+                    notify_line INTEGER NOT NULL DEFAULT 0
                 );
 
                 CREATE TABLE IF NOT EXISTS routine_runs (
@@ -99,6 +101,10 @@ class RoutineRepository:
                 """
             )
 
+            columns = {row["name"] for row in conn.execute("PRAGMA table_info(routines)")}
+            if "notify_line" not in columns:
+                conn.execute("ALTER TABLE routines ADD COLUMN notify_line INTEGER NOT NULL DEFAULT 0")
+
     def insert(
         self,
         *,
@@ -110,6 +116,7 @@ class RoutineRepository:
         model_id: str,
         conversation_id: str,
         now: datetime | None = None,
+        notify_line: bool = False,
     ) -> Routine:
         moment = now or datetime.now(UTC)
         stamp = as_utc_iso(moment)
@@ -128,14 +135,15 @@ class RoutineRepository:
             conversation_id=conversation_id,
             created_at=stamp,
             updated_at=stamp,
+            notify_line=notify_line,
         )
         with self._connect() as conn:
             conn.execute(
                 """
                 INSERT INTO routines (
                     id, name, prompt, schedule_kind, schedule, timezone, enabled,
-                    last_run, next_run, model_id, conversation_id, created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, 1, NULL, ?, ?, ?, ?, ?)
+                    last_run, next_run, model_id, conversation_id, created_at, updated_at, notify_line
+                ) VALUES (?, ?, ?, ?, ?, ?, 1, NULL, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     routine.id,
@@ -149,6 +157,7 @@ class RoutineRepository:
                     routine.conversation_id,
                     routine.created_at,
                     routine.updated_at,
+                    int(routine.notify_line),
                 ),
             )
         return routine
@@ -190,6 +199,14 @@ class RoutineRepository:
                 WHERE id = ?
                 """,
                 (1 if enabled else 0, nxt, stamp, routine_id),
+            )
+        return self.get(routine_id)
+
+    def set_notify_line(self, routine_id: str, enabled: bool) -> Routine | None:
+        with self._connect() as conn:
+            conn.execute(
+                "UPDATE routines SET notify_line = ?, updated_at = ? WHERE id = ?",
+                (int(enabled), as_utc_iso(datetime.now(UTC)), routine_id),
             )
         return self.get(routine_id)
 
@@ -355,6 +372,7 @@ def _routine(row: sqlite3.Row) -> Routine:
         conversation_id=row["conversation_id"],
         created_at=row["created_at"],
         updated_at=row["updated_at"],
+        notify_line=bool(row["notify_line"]),
     )
 
 

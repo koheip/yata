@@ -159,6 +159,23 @@ Gmail とカレンダーのツールは `required_connector` を持ち、対応�
 
 メールの送信、予定の作成・更新・削除は、確認ダイアログで内容を見せてから許可したときだけ実行されます。ルーティンから呼ばれた場合も同じで、誰も見ていないときは「確認待ち」のまま止まります。
 
+### LINE 連携
+
+LINE からヤタと双方向にチャットできます。確認が必要な操作には「許可する」「拒否する」ボタンが表示されます。`line_push_message`（LINE に送信）は実行前に確認し、許可ユーザー一覧の先頭にある自分の LINE に送ります。ルーティンごとの「LINE通知」をオンにすると、実行結果やエラーを自分の LINE に通知します。この通知は利用者が設定したものとして、実行ごとの確認なしで送ります。
+
+Webhook はメイン UI と別のサーバーで、`127.0.0.1:8742` の `/line/webhook` と `/line/health` だけを提供します。署名検証と userId の許可リストで受信を制限します。トンネルで公開するのはこの Webhook サーバーだけです。8741 のメイン UI は公開しません。
+
+1. [LINE Developers コンソール](https://developers.line.biz/console/) で LINE Official Account（公式アカウント）と Messaging API チャネルを用意します。公式アカウントを作り、LINE Official Account Manager から Messaging API を有効にするとチャネルが作成されます。
+2. チャネル基本設定のチャネルシークレットと、Messaging API設定のチャネルアクセストークン（長期）を取得します。
+3. `.env.example` の LINE セクションを参考に、自分の `.env` に `LINE_CHANNEL_SECRET`、`LINE_CHANNEL_ACCESS_TOKEN`、`LINE_ALLOWED_USER_IDS` を設定します。自分の userId はチャネル基本設定の「あなたのユーザーID」で確認できます。未許可ユーザーからメッセージが来たときのログにも、userId と `LINE_ALLOWED_USER_IDS` の設定ヒントが出ます。複数指定する場合はカンマ区切りにし、自分を先頭に置いてください。
+4. ヤタを起動し、別の PowerShell で `./scripts/line-tunnel.ps1` を実行します。既定の `LINE_WEBHOOK_PORT=8742` を変更する場合は、ヤタを再起動してください。
+5. LINE Developers の Webhook URL に `<public>/line/webhook`（表示された公開 HTTPS URL に `/line/webhook` を追加）を設定し、「検証」を実行して「Webhookの利用」をオンにします。
+6. LINE Official Account Manager で「応答メッセージ」をオフにし、公式アカウントを友だち追加してメッセージを送ります。
+
+cloudflared の quick tunnel URL は起動のたびに変わるため、その都度コンソールの Webhook URL を更新してください。ngrok の無料固定ドメインなら URL は変わりません。`ngrok http 8742`、または `ngrok http --url=<your>.ngrok-free.app 8742` を利用できます。ポートを変更した場合はコマンドの番号も合わせてください。
+
+無料のコミュニケーションプランは 200 通/月です。返信（reply）は無料で、push とルーティンの LINE 通知は通数に数えられます。
+
 ### 記憶
 
 `conversations` と `messages` が LLM に渡す履歴です。画面用のトランスクリプトは、ツール呼び出しをそのターンの吹き出しに畳みます。`facts` は `save_memory` で書いた短い事実で、次のターンの system プロンプトに入ります。個人の規模なので SQLite の同期 API です。接続は呼び出しごとに開きます。
@@ -186,6 +203,10 @@ Gmail とカレンダーのツールは `required_connector` を持ち、対応�
 | `YATA_TIMEZONE` | ルーティンの既定タイムゾーン（`Asia/Tokyo`） |
 | `GOOGLE_OAUTH_CLIENT_SECRET_FILE` | ダウンロードした client_secret*.json のパス（推奨） |
 | `GOOGLE_OAUTH_CLIENT_ID` / `GOOGLE_OAUTH_CLIENT_SECRET` | JSON を使わない場合の直接指定 |
+| `LINE_CHANNEL_SECRET` | LINE チャネル基本設定のシークレット |
+| `LINE_CHANNEL_ACCESS_TOKEN` | Messaging API のチャネルアクセストークン（長期） |
+| `LINE_ALLOWED_USER_IDS` | 許可する userId（カンマ区切り、先頭が通知先） |
+| `LINE_WEBHOOK_PORT` | Webhook 専用ポート（既定 `8742`、127.0.0.1 のみ） |
 
 ローカルモデルはツール呼び出しに対応したものを選んでください。`ollama pull gemma3` のように入れ、`YATA_OLLAMA_MODEL` をその名前に合わせます。
 

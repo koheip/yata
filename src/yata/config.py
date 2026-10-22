@@ -55,6 +55,12 @@ class Settings(BaseSettings):
     # Chatwork 連携。API トークンが未設定ならツールは提示されない。
     chatwork_api_token: str | None = None
 
+    # LINE 連携。Webhook の署名検証と送信認証、許可ユーザーを設定する。
+    line_channel_secret: str | None = None
+    line_channel_access_token: str | None = None
+    line_allowed_user_ids: str | None = None
+    line_webhook_port: int = 8742
+
     # 楽天市場連携。アプリケーション ID とアクセスキーの両方が必要。
     rakuten_application_id: str | None = None
     rakuten_access_key: str | None = None

@@ -22,6 +22,7 @@ type SidebarProps = {
   presets: RoutinePreset[]
   onCreateRoutine: (input: { name: string; prompt: string; preset?: string; schedule?: string }) => Promise<void>
   onToggleRoutine: (routine: Routine) => Promise<void>
+  onToggleRoutineLine: (routine: Routine) => Promise<void>
   onDeleteRoutine: (routine: Routine) => Promise<void>
   connectors: Connector[]
   onConnectConnector: (connector: Connector) => void
@@ -42,6 +43,7 @@ export function Sidebar({
   presets,
   onCreateRoutine,
   onToggleRoutine,
+  onToggleRoutineLine,
   onDeleteRoutine,
   connectors,
   onConnectConnector,
@@ -118,6 +120,7 @@ export function Sidebar({
           presets={presets}
           onCreate={onCreateRoutine}
           onToggle={onToggleRoutine}
+          onToggleLine={onToggleRoutineLine}
           onDelete={onDeleteRoutine}
           onOpen={(id) => onSelect(id)}
         />

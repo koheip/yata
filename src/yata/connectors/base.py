@@ -33,6 +33,9 @@ class Connector(ABC):
     auth_kind: str = "oauth"
     setup_instructions: str = ""
 
+    def status_note(self) -> str | None:
+        return None
+
     @abstractmethod
     def status(self) -> ConnectorState: ...
 
