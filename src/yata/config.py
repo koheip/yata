@@ -100,6 +100,8 @@ class Settings(BaseSettings):
     line_channel_access_token: str | None = None
     line_allowed_user_ids: str | None = None
     line_webhook_port: int = 8742
+    # LINE から話しかけるための入り口（cloudflared）を、ヤタが自分で用意して LINE に登録する。
+    yata_line_tunnel: bool = True
 
     # 楽天市場連携。アプリケーション ID とアクセスキーの両方が必要。
     rakuten_application_id: str | None = None

@@ -212,11 +212,11 @@ Webhook はメイン UI と別のサーバーで、`127.0.0.1:8742` の `/line/w
 1. [LINE Developers コンソール](https://developers.line.biz/console/) で LINE Official Account（公式アカウント）と Messaging API チャネルを用意します。公式アカウントを作り、LINE Official Account Manager から Messaging API を有効にするとチャネルが作成されます。
 2. チャネル基本設定のチャネルシークレットと、Messaging API設定のチャネルアクセストークン（長期）を取得します。
 3. `.env.example` の LINE セクションを参考に、自分の `.env` に `LINE_CHANNEL_SECRET`、`LINE_CHANNEL_ACCESS_TOKEN`、`LINE_ALLOWED_USER_IDS` を設定します。自分の userId はチャネル基本設定の「あなたのユーザーID」で確認できます。未許可ユーザーからメッセージが来たときのログにも、userId と `LINE_ALLOWED_USER_IDS` の設定ヒントが出ます。複数指定する場合はカンマ区切りにし、自分を先頭に置いてください。
-4. ヤタを起動し、別の PowerShell で `./scripts/line-tunnel.ps1` を実行します。既定の `LINE_WEBHOOK_PORT=8742` を変更する場合は、ヤタを再起動してください。
-5. LINE Developers の Webhook URL に `<public>/line/webhook`（表示された公開 HTTPS URL に `/line/webhook` を追加）を設定し、「検証」を実行して「Webhookの利用」をオンにします。
+4. [cloudflared](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/) を入れておきます（Windows なら `winget install --id Cloudflare.cloudflared`）。ヤタを起動すると、ヤタが cloudflared を動かして LINE 用の入り口（Webhook の待ち受けだけ。画面や API は出しません）を用意し、その URL を LINE の Webhook URL に自動で登録します。URL が変わっても登録し直します。止めたいときは `YATA_LINE_TUNNEL=false` にし、`./scripts/line-tunnel.ps1` で手動で用意できます。
+5. LINE Developers の「Messaging API設定」で「Webhookの利用」をオンにします（オフのままだと、設定画面の LINE の欄で知らせます）。
 6. LINE Official Account Manager で「応答メッセージ」をオフにし、公式アカウントを友だち追加してメッセージを送ります。
 
-cloudflared の quick tunnel URL は起動のたびに変わるため、その都度コンソールの Webhook URL を更新してください。ngrok の無料固定ドメインなら URL は変わりません。`ngrok http 8742`、または `ngrok http --url=<your>.ngrok-free.app 8742` を利用できます。ポートを変更した場合はコマンドの番号も合わせてください。
+cloudflared の quick tunnel URL は起動のたびに変わりますが、ヤタが自動で登録し直します。手動の場合（`YATA_LINE_TUNNEL=false`）は、その都度コンソールの Webhook URL を更新してください。ngrok の無料固定ドメインなら URL は変わりません。`ngrok http 8742`、または `ngrok http --url=<your>.ngrok-free.app 8742` を利用できます。ポートを変更した場合はコマンドの番号も合わせてください。
 
 無料のコミュニケーションプランは 200 通/月です。返信（reply）は無料で、push とルーティンの LINE 通知は通数に数えられます。
 
@@ -261,6 +261,7 @@ cloudflared の quick tunnel URL は起動のたびに変わるため、その�
 | `LINE_CHANNEL_ACCESS_TOKEN` | Messaging API のチャネルアクセストークン（長期） |
 | `LINE_ALLOWED_USER_IDS` | 許可する userId（カンマ区切り、先頭が通知先） |
 | `LINE_WEBHOOK_PORT` | Webhook 専用ポート（既定 `8742`、127.0.0.1 のみ） |
+| `YATA_LINE_TUNNEL` | LINE の入り口（cloudflared）を自動で用意して Webhook URL を登録する（既定 `true`） |
 
 ローカルモデルはツール呼び出しに対応したものを選んでください。`ollama pull gemma3` のように入れ、`YATA_OLLAMA_MODEL` をその名前に合わせます。
 
@@ -295,6 +296,10 @@ packaging/              Windows アプリ版（PyInstaller・Setup.exe・MSIX）
 ## ロードマップ
 
 先の計画は [ROADMAP.md](ROADMAP.md) に分けてあります。Phase 0 と、Phase 1 のプロセス内ルーティンまで入っています。ヤタは汎用の個人アシスタントで、最初の公開は自分の PC で動くオープンソースです。段階、成功条件、当面やらないことはロードマップに書いてあります。
+
+## ライセンス
+
+[MIT](LICENSE)。不具合や要望は [Issues](https://github.com/koheip/yata/issues) へ。セキュリティの問題は [SECURITY.md](SECURITY.md) の方法で知らせてください。
 
 ## English
 

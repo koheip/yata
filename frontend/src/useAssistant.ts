@@ -111,6 +111,24 @@ export function useAssistant() {
   const [confirm, setConfirm] = useState<ConfirmRequest | null>(null)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  useEffect(() => {
+    // 設定を開いたら、連携の状態（LINE の入り口など、裏で変わるもの）を読み直す。
+    if (!settingsOpen) return
+    let alive = true
+    const load = () =>
+      listConnectors().then(
+        (data) => {
+          if (alive) setConnectors(data.connectors)
+        },
+        () => undefined,
+      )
+    void load()
+    const timer = window.setInterval(load, 5000)
+    return () => {
+      alive = false
+      window.clearInterval(timer)
+    }
+  }, [settingsOpen])
   const [pendingDelete, setPendingDelete] = useState<Conversation | null>(null)
   const confirmResolver = useRef<((approved: boolean) => void) | null>(null)
   const sendingRef = useRef(false)

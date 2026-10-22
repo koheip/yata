@@ -52,6 +52,8 @@ def connector_setups(port: int) -> list[dict[str, Any]]:
                 "「チャネル基本設定」で、チャネルシークレットと「あなたのユーザーID」をコピーします。",
                 "「Messaging API設定」で、チャネルアクセストークン（長期）を発行してコピーします。",
                 "3つを下に貼り付けて保存し、ヤタを起動し直します。",
+                "LINE から話しかけるには cloudflared を入れておきます（PowerShell で winget install --id Cloudflare.cloudflared）。Webhook URL はヤタが自動で登録します。",
+                "「Messaging API設定」で「Webhookの利用」をオンにし、「応答メッセージ」をオフにします。",
             ],
             "fields": [
                 {"name": "line_channel_access_token", "label": "チャネルアクセストークン（長期）", "secret": True, "optional": False},

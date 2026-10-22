@@ -6,3 +6,5 @@ import pytest
 def allow_test_hosts(monkeypatch):
     # テスト用クライアントは "testserver" や "test" というホスト名で API を呼ぶ。
     monkeypatch.setenv("YATA_ALLOWED_HOSTS", "127.0.0.1,localhost,::1,testserver,test")
+    # テストでは cloudflared を動かさない。
+    monkeypatch.setenv("YATA_LINE_TUNNEL", "false")

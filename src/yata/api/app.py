@@ -41,6 +41,7 @@ from yata.connectors.pkce import challenge_for, new_verifier
 from yata.connectors.setup import CONNECTOR_TO_SETUP, check_line_token, connector_setups
 from yata.line.bridge import LineBridge
 from yata.line.client import LineClient
+from yata.line.tunnel import LineTunnel
 from yata.llm.keycheck import check_key
 from yata.llm.local_models import MODEL_NAME, RECOMMENDED_OLLAMA, OllamaPuller
 from yata.llm.local_models import ollama_models as _ollama_models
@@ -248,9 +249,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     async def lifespan(_: FastAPI):
         if scheduler is not None:
             await scheduler.start()
+        tunnel = app.state.line_tunnel
+        if tunnel is not None and not settings.yata_offline:
+            tunnel.start()
         try:
             yield
         finally:
+            if tunnel is not None:
+                await tunnel.stop()
             if app.state.line_bridge is not None:
                 await app.state.line_bridge.close()
             if scheduler is not None:
@@ -282,6 +288,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.artifacts = artifacts
     app.state.routines = routines
     app.state.line_bridge = line_bridge
+    # LINE から話しかけるための入り口。Webhook の待ち受け（main.py）と同じ条件のときだけ動かす。
+    app.state.line_tunnel = (
+        LineTunnel(settings.line_channel_access_token.strip(), settings.line_webhook_port)
+        if line_bridge is not None and line_bridge.connector.webhook_ready and settings.yata_line_tunnel
+        else None
+    )
 
     @app.get("/api/health")
     def health() -> dict[str, Any]:
@@ -466,6 +478,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     async def set_offline(body: SetOffline) -> dict[str, Any]:
         secrets.set("yata_offline", "true" if body.enabled else "false")
         settings.yata_offline = body.enabled
+        tunnel = app.state.line_tunnel
+        if tunnel is not None:
+            # オフラインの間は、LINE の入り口も閉じる。
+            if body.enabled:
+                await tunnel.stop()
+            else:
+                tunnel.start()
         return await local_setup_dict()
 
     def setup_dict(item: dict[str, Any]) -> dict[str, Any]:
@@ -704,7 +723,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @app.get("/api/connectors")
     def list_connectors() -> dict[str, Any]:
-        return {"connectors": [_connector_dict(item) for item in connectors.list()]}
+        items = [_connector_dict(item) for item in connectors.list()]
+        tunnel = app.state.line_tunnel
+        for item in items:
+            if item["id"] == "line" and item["status"] == "connected":
+                if tunnel is not None:
+                    item["note"] = f"{item['note']}／{tunnel.status['message']}"
+                    item["line_tunnel"] = tunnel.status
+                elif settings.yata_offline:
+                    item["note"] = f"{item['note']}／オフラインモード中は止まっています"
+        return {"connectors": items}
 
     @app.post("/api/connectors/{connector_id}/connect")
     def connect_connector(connector_id: str) -> dict[str, Any]:
