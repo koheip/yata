@@ -47,7 +47,17 @@ class LineBridge:
             task.cancel()
         await asyncio.gather(*tasks, return_exceptions=True)
 
+    def _tools(self, model_id: str):
+        tools_for = getattr(self.router, "tools_for", None)
+        if callable(tools_for):
+            return tools_for(model_id, self.registry, self.connectors)
+        return visible_registry(self.registry, self.connectors)
+
     async def handle_events(self, events):
+        if self.settings.yata_offline:
+            # オフラインモードでは、LINE への返信（外への送信）もしない。
+            logger.info("LINE: オフラインモード中のため、届いたメッセージに返信しません。")
+            return
         for event in events:
             source = event.get("source") or {}
             if source.get("type") != "user":
@@ -106,7 +116,9 @@ class LineBridge:
                     await self.client.send_text(user_id, self._safe(str(exc)), take_token())
                     return
                 self.memory.add_message(conversation.id, LLMMessage(role="user", content=text))
-                messages = [LLMMessage(role="system", content=build_system_prompt(self.memory.list_facts()))]
+                messages = [LLMMessage(role="system", content=build_system_prompt(
+                    self.memory.list_facts(),
+                    compact=bool(getattr(self.router, "is_local", lambda _m: False)(conversation.model_id))))]
                 messages.extend(item.to_llm() for item in self.memory.list_messages(conversation.id))
                 base_len = len(messages)
                 ctx = ToolContextFactory(
@@ -115,7 +127,8 @@ class LineBridge:
                 ).for_conversation(conversation.id)
                 async for event in run_agent(
                     messages=messages, provider=provider, model=upstream,
-                    registry=visible_registry(self.registry, self.connectors), policy=ToolPolicy(),
+                    registry=self._tools(conversation.model_id),
+                    policy=ToolPolicy(),
                     gate=self.gate, ctx=ctx, max_steps=self.settings.yata_max_steps,
                     confirm_timeout=self.confirm_timeout,
                 ):
@@ -165,7 +178,8 @@ class LineBridge:
 
     async def push_to_owner(self, text) -> bool:
         owner = self.connector.owner_user_id
-        if not owner:
+        if not owner or self.settings.yata_offline:
+            # オフラインモードでは、ルーティンの結果も LINE に送らない。
             return False
         try:
             await self.client.send_text(owner, self._safe(text))

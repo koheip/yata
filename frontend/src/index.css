@@ -49,38 +49,38 @@
 }
 
 :root {
-    --background: #f3efe6;
-    --foreground: #1c1915;
-    --card: #fbf8f1;
-    --card-foreground: #1c1915;
-    --popover: #fbf8f1;
-    --popover-foreground: #1c1915;
-    --primary: #b8432f;
-    --primary-foreground: #fffaf6;
-    --secondary: #ebe4d4;
-    --secondary-foreground: #1c1915;
-    --muted: #ebe4d4;
-    --muted-foreground: #5c564c;
-    --accent: #efe7d6;
-    --accent-foreground: #1c1915;
-    --destructive: #9f2d2d;
-    --border: #ddd4c3;
-    --input: #e4dccb;
-    --ring: #b8432f;
+    --background: #faf8fc;
+    --foreground: #221933;
+    --card: #ffffff;
+    --card-foreground: #221933;
+    --popover: #ffffff;
+    --popover-foreground: #221933;
+    --primary: #4a2f72;
+    --primary-foreground: #ffffff;
+    --secondary: #ece5f5;
+    --secondary-foreground: #221933;
+    --muted: #f1ecf6;
+    --muted-foreground: #5d5270;
+    --accent: #ece5f5;
+    --accent-foreground: #221933;
+    --destructive: #a3302f;
+    --border: #e3daee;
+    --input: #d9cfe6;
+    --ring: #4a2f72;
     --chart-1: oklch(0.87 0 0);
     --chart-2: oklch(0.556 0 0);
     --chart-3: oklch(0.439 0 0);
     --chart-4: oklch(0.371 0 0);
     --chart-5: oklch(0.269 0 0);
     --radius: 0.625rem;
-    --sidebar: #efe8da;
-    --sidebar-foreground: #1c1915;
-    --sidebar-primary: #b8432f;
-    --sidebar-primary-foreground: #fffaf6;
-    --sidebar-accent: #e7dfd0;
-    --sidebar-accent-foreground: #1c1915;
-    --sidebar-border: #ddd4c3;
-    --sidebar-ring: #b8432f;
+    --sidebar: #f6f2fa;
+    --sidebar-foreground: #221933;
+    --sidebar-primary: #4a2f72;
+    --sidebar-primary-foreground: #ffffff;
+    --sidebar-accent: #e9e1f3;
+    --sidebar-accent-foreground: #221933;
+    --sidebar-border: #e3daee;
+    --sidebar-ring: #4a2f72;
 }
 
 .dark {
@@ -129,11 +129,13 @@
     }
   body {
     background-image:
-      radial-gradient(1100px 480px at 0% -10%, rgba(184, 67, 47, 0.08), transparent 55%),
-      radial-gradient(800px 420px at 100% 0%, rgba(63, 107, 78, 0.06), transparent 50%);
+      radial-gradient(900px 420px at 50% -10%, rgba(244, 178, 58, 0.10), transparent 60%);
     }
 }
 
 .font-mincho {
   font-family: "Shippori Mincho", "Yu Mincho", "Hiragino Mincho ProN", serif;
+}
+.font-maru {
+  font-family: "Zen Maru Gothic", "Zen Kaku Gothic New", sans-serif;
 }

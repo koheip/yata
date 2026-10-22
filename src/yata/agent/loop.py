@@ -7,6 +7,7 @@ know about HTTP or the database. Callers persist the messages appended to
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from collections.abc import AsyncIterator
 from dataclasses import dataclass
@@ -69,7 +70,15 @@ async def run_agent(
     for step in range(1, max_steps + 1):
         yield AgentEvent("step", {"step": step, "max_steps": max_steps, "phase": "thinking"})
         try:
-            response = await provider.complete(messages, specs, model=model)
+            if getattr(provider, "supports_streaming", False):
+                response = None
+                async for item in _stream_complete(provider, messages, specs, model):
+                    if isinstance(item, str):
+                        yield AgentEvent("delta", {"text": item})
+                    else:
+                        response = item
+            else:
+                response = await provider.complete(messages, specs, model=model)
         except ProviderError as exc:
             text = str(exc)
             messages.append(LLMMessage(role="assistant", content=text))
@@ -109,6 +118,27 @@ async def run_agent(
     messages.append(LLMMessage(role="assistant", content=text))
     yield AgentEvent("answer", {"content": text, "truncated": True})
     yield AgentEvent("done", {"ok": True, "truncated": True})
+
+
+async def _stream_complete(provider, messages, specs, model) -> AsyncIterator[Any]:
+    """provider.complete を動かしながら、できた文字を順に出し、最後に返事そのものを出す。"""
+    queue: asyncio.Queue[str] = asyncio.Queue()
+    task = asyncio.create_task(provider.complete(messages, specs, model=model, on_text=queue.put_nowait))
+    try:
+        while True:
+            getter = asyncio.create_task(queue.get())
+            done, _ = await asyncio.wait({task, getter}, return_when=asyncio.FIRST_COMPLETED)
+            if getter in done:
+                yield getter.result()
+                continue
+            getter.cancel()
+            while not queue.empty():
+                yield queue.get_nowait()
+            break
+        yield task.result()
+    finally:
+        if not task.done():
+            task.cancel()
 
 
 def _record(messages: list[LLMMessage], call: ToolCall, result: ToolResult) -> AgentEvent:

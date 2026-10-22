@@ -2,15 +2,18 @@ import { useEffect, useRef } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { SUGGESTIONS, summarizeArguments, toolLabel } from "../labels"
+import { Crow } from "./Crow"
 import type { ChatMessage, Step } from "../types"
 
 type TranscriptProps = {
   messages: ChatMessage[]
   streaming: boolean
   onSuggest: (text: string) => void
+  /** 返事の横に出すボットの見た目 */
+  bot?: { name: string; color: string; accessory: string }
 }
 
-export function Transcript({ messages, streaming, onSuggest }: TranscriptProps) {
+export function Transcript({ messages, streaming, onSuggest, bot }: TranscriptProps) {
   const endRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
     endRef.current?.scrollIntoView({ block: "end" })
@@ -47,7 +50,7 @@ export function Transcript({ messages, streaming, onSuggest }: TranscriptProps) 
         return message.role === "user" ? (
           <UserMessage key={message.id} content={message.content} />
         ) : (
-          <AssistantMessage key={message.id} message={message} live={live} />
+          <AssistantMessage key={message.id} message={message} live={live} bot={bot} />
         )
       })}
       <div ref={endRef} />
@@ -58,24 +61,27 @@ export function Transcript({ messages, streaming, onSuggest }: TranscriptProps) 
 function UserMessage({ content }: { content: string }) {
   return (
     <div className="flex justify-end">
-      <p className="max-w-[85%] rounded-2xl bg-foreground px-4 py-2.5 text-sm leading-7 whitespace-pre-wrap text-background">
+      <p className="max-w-[85%] rounded-2xl rounded-br-md bg-[#E6DDF3] px-4 py-2.5 text-[0.95rem] leading-7 font-medium whitespace-pre-wrap text-[#1B1226]">
         {content}
       </p>
     </div>
   )
 }
 
-function AssistantMessage({ message, live }: { message: ChatMessage; live: boolean }) {
+function AssistantMessage({ message, live, bot }: { message: ChatMessage; live: boolean; bot?: TranscriptProps["bot"] }) {
   const thinking = live && !message.content && message.steps.length === 0
   return (
-    <article className="space-y-3">
-      {thinking ? <p className="text-sm text-muted-foreground">考えています…</p> : null}
-      {message.steps.length > 0 ? <ToolTrace steps={message.steps} live={live} /> : null}
-      {message.content ? (
-        <p className="text-sm leading-7 whitespace-pre-wrap text-foreground">{message.content}</p>
-      ) : live && message.steps.length > 0 ? (
-        <p className="text-sm text-muted-foreground">結果をまとめています…</p>
-      ) : null}
+    <article className="flex items-start gap-2.5" aria-label={`${bot?.name ?? "ヤタ"}の返事`}>
+      <Crow color={bot?.color ?? "purple"} accessory={bot?.accessory ?? "none"} size={36} className="mt-1 shrink-0" />
+      <div className="min-w-0 max-w-[85%] space-y-3 rounded-2xl rounded-tl-md border border-[#E3DAEE] bg-white px-4 py-3 shadow-[0_2px_8px_rgba(34,25,51,0.05)]">
+        {thinking ? <p className="text-[0.95rem] text-[#4A3F5C]">考えています…</p> : null}
+        {message.steps.length > 0 ? <ToolTrace steps={message.steps} live={live} /> : null}
+        {message.content ? (
+          <p className="text-[0.95rem] leading-7 font-medium whitespace-pre-wrap text-[#1B1226]">{message.content}</p>
+        ) : live && message.steps.length > 0 ? (
+          <p className="text-[0.95rem] text-[#4A3F5C]">結果をまとめています…</p>
+        ) : null}
+      </div>
     </article>
   )
 }
@@ -85,18 +91,18 @@ function ToolTrace({ steps, live }: { steps: Step[]; live: boolean }) {
     <ol className="space-y-2 border-l border-border pl-3">
       {steps.map((step, index) =>
         step.type === "note" ? (
-          <li key={`note-${index}`} className="text-xs text-muted-foreground">
+          <li key={`note-${index}`} className="text-sm text-[#4A3F5C]">
             {step.text}
           </li>
         ) : (
           <li key={step.id || index} className="text-sm">
             <div className="flex flex-wrap items-center gap-2">
               <Badge variant={step.ok ? "secondary" : "destructive"}>{toolLabel(step.name)}</Badge>
-              <span className="text-xs text-muted-foreground">{summarizeArguments(step.arguments)}</span>
+              <span className="text-[0.8rem] text-[#4A3F5C]">{summarizeArguments(step.arguments)}</span>
               {live && !step.content ? <span className="text-xs text-muted-foreground">実行しています…</span> : null}
             </div>
             {step.content ? (
-              <pre className="mt-1 max-h-48 overflow-auto rounded-lg bg-card px-3 py-2 text-xs leading-5 whitespace-pre-wrap text-muted-foreground">
+              <pre className="mt-1 max-h-48 overflow-auto rounded-lg bg-[#F6F2FA] px-3 py-2 text-xs leading-5 whitespace-pre-wrap text-[#4A3F5C]">
                 {step.content}
               </pre>
             ) : null}

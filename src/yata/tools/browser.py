@@ -18,6 +18,40 @@ from yata.tools.base import Risk, Tool, ToolContext, ToolResult, clip_text
 
 logger = logging.getLogger(__name__)
 
+# Playwright 付属の Chromium がなければ、PC に入っている Edge → Chrome の順に使う。
+# Windows には Edge が最初から入っているので、約150MB の Chromium を落とさずに済む。
+FALLBACK_CHANNELS = ("msedge", "chrome")
+NO_BROWSER_MESSAGE = (
+    "ブラウザ操作に使えるブラウザが見つかりませんでした。"
+    "Microsoft Edge か Google Chrome を入れてから、もう一度試してください。"
+)
+
+
+class BrowserUnavailableError(RuntimeError):
+    pass
+
+
+def _missing_executable(exc: Exception) -> bool:
+    text = str(exc)
+    return "Executable doesn't exist" in text or "is not found at" in text or "Please run the following command" in text
+
+
+async def launch_browser(chromium: Any) -> Any:
+    try:
+        return await chromium.launch(headless=True)
+    except Exception as exc:
+        if not _missing_executable(exc):
+            raise
+    for channel in FALLBACK_CHANNELS:
+        try:
+            browser = await chromium.launch(headless=True, channel=channel)
+        except Exception as exc:  # このチャンネルのブラウザが入っていない
+            logger.debug("browser channel %s unavailable: %s", channel, exc)
+            continue
+        logger.info("Playwright の Chromium がないため、%s を使います", channel)
+        return browser
+    raise BrowserUnavailableError(NO_BROWSER_MESSAGE)
+
 
 class BrowserSession:
     def __init__(self) -> None:
@@ -43,7 +77,12 @@ class BrowserSession:
                 from playwright.async_api import async_playwright
 
                 self._playwright = await async_playwright().start()
-                self._browser = await self._playwright.chromium.launch(headless=True)
+                try:
+                    self._browser = await launch_browser(self._playwright.chromium)
+                except Exception:
+                    await self._playwright.stop()
+                    self._playwright = None
+                    raise
             page = await self._browser.new_page(viewport={"width": 1280, "height": 800})
             self._pages[conversation_id] = page
             return page
@@ -65,11 +104,8 @@ class BrowserSession:
 
 def _browser_error(exc: Exception) -> str:
     text = str(exc)
-    if "Executable doesn't exist" in text or "browserType.launch" in text:
-        return (
-            "Playwright のブラウザが見つかりません。"
-            "`uv run playwright install chromium` を実行してください。"
-        )
+    if isinstance(exc, BrowserUnavailableError) or _missing_executable(exc):
+        return NO_BROWSER_MESSAGE
     return f"ブラウザ操作に失敗しました: {text[:300]}"
 
 

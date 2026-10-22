@@ -1,4 +1,4 @@
-import { ArrowUp } from "lucide-react"
+import { ArrowUp, Square } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import type { ModelInfo } from "../types"
@@ -9,9 +9,10 @@ type ComposerProps = {
   selected: ModelInfo | null
   onDraft: (value: string) => void
   onSend: () => void
+  onStop?: () => void
 }
 
-export function Composer({ draft, streaming, selected, onDraft, onSend }: ComposerProps) {
+export function Composer({ draft, streaming, selected, onDraft, onSend, onStop }: ComposerProps) {
   const blocked = streaming || !draft.trim() || (selected ? !selected.ready : false)
   return (
     <form
@@ -39,9 +40,15 @@ export function Composer({ draft, streaming, selected, onDraft, onSend }: Compos
         />
         <div className="flex items-center justify-between px-1 pb-1">
           <p className="text-xs text-muted-foreground">Enter で送信、Shift+Enter で改行</p>
-          <Button type="submit" size="icon" disabled={blocked} aria-label="送信">
-            <ArrowUp />
-          </Button>
+          {streaming && onStop ? (
+            <Button type="button" size="icon" variant="outline" onClick={onStop} aria-label="返事を止める" title="返事を止める">
+              <Square className="fill-current" />
+            </Button>
+          ) : (
+            <Button type="submit" size="icon" disabled={blocked} aria-label="送信">
+              <ArrowUp />
+            </Button>
+          )}
         </div>
       </div>
     </form>

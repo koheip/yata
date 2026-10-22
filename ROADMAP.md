@@ -23,6 +23,10 @@ Phase 0 と、Phase 1 のプロセス内スケジューラまでです。`./scri
 - **日本語のチャット UI。** React。返信、ツールの途中経過、モデル選択、確認ダイアログ。
 - **ルーティン。** SQLite に cron か間隔を保存し、同じプロセスの APScheduler がエージェントを呼ぶ。ブラウザのタブを閉じても、プロセスが生きていれば実行され、結果は会話に残る。確認が必要な操作は「確認待ち」になる。
 - **テスト。** プロバイダ変換、ツール登録、モック LLM のループ、SQLite の記憶、ルーティン。`uv run pytest`。
+- **日本の仕事の道具。** Chatwork・LINE（公式アカウントの一斉配信を含む）・freee・マネーフォワード クラウド請求書・kintone・Backlog・楽天市場。祝日・営業日・和暦と、インボイスの消費税の計算（ネット不要）。
+- **AI の選択肢。** Gemini・OpenAI・Anthropic に加えて、xAI・DeepSeek・Kimi・Mistral・Groq・OpenRouter・PLaMo。PC の中では Ollama・LM Studio・llama.cpp/LocalAI・Jan・vLLM・その他の OpenAI 互換サーバー。
+- **完全オフラインモード。** PC の中の AI だけを使い、ネットに出るツールと連携、LINE への通知を止める。
+- **アプリ版の配布の準備。** PyInstaller・Setup.exe（Inno Setup）・Microsoft Store 用 MSIX を GitHub Actions で作る（docs/distribution.md）。紹介サイト（site/）。
 
 サーバーのプロセスが動いているあいだのルーティンは入りました。Gmail と Google カレンダーも OAuth 連携として入りました（下の Phase 2 を参照）。まだないのは、ターミナルを閉じても残る Windows サービス、OS 通知、トレイアプリ、エージェント専用の仮想マシン、複数エージェント、OSS としての公開物、有料のホスト版です。
 

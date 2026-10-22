@@ -8,6 +8,7 @@ from collections.abc import Awaitable, Callable
 from datetime import UTC, datetime
 
 from yata.agent.loop import run_agent, seal_open_tool_calls
+from yata.bots import DEFAULT_BOT_ID
 from yata.confirm.gate import ConfirmationGate
 from yata.connectors.base import ConnectorRegistry
 from yata.llm.types import LLMMessage, LLMProvider, ProviderError
@@ -70,6 +71,7 @@ class RoutineService:
         timezone: str | None = None,
         now: datetime | None = None,
         notify_line: bool = False,
+        bot_id: str = DEFAULT_BOT_ID,
     ) -> Routine:
         zone = timezone or self.default_timezone
         kind, expression = resolve_schedule(
@@ -82,7 +84,9 @@ class RoutineService:
         clean_prompt = prompt.strip()
         if not clean_name or not clean_prompt:
             raise ScheduleError("名前と指示を入れてください。")
-        conversation = self.memory.create_conversation(model_id, title=clip_title(f"ルーティン: {clean_name}", 40))
+        conversation = self.memory.create_conversation(
+            model_id, title=clip_title(f"ルーティン: {clean_name}", 40), bot_id=bot_id
+        )
         return self.routines.insert(
             name=clean_name,
             prompt=clean_prompt,
@@ -174,7 +178,11 @@ class RoutineService:
                 return
 
             self.memory.add_message(conversation_id, LLMMessage(role="user", content=fresh.prompt))
-            messages = [LLMMessage(role="system", content=build_system_prompt(self.memory.list_facts()))]
+            owner = self.memory.get_conversation(conversation_id)
+            bot = self.memory.get_bot(owner.bot_id) if owner is not None else None
+            messages = [LLMMessage(role="system", content=build_system_prompt(
+                self.memory.list_facts(), bot,
+                compact=bool(getattr(self.router, "is_local", lambda _m: False)(fresh.model_id))))]
             messages.extend(item.to_llm() for item in self.memory.list_messages(conversation_id))
             base_len = len(messages)
             ctx = ToolContextFactory(
@@ -184,7 +192,9 @@ class RoutineService:
                 allow_private_urls=self.allow_private_urls,
                 connectors=self.connectors,
             ).for_conversation(conversation_id)
-            active_registry = visible_registry(self.registry, self.connectors)
+            tools_for = getattr(self.router, "tools_for", None)
+            active_registry = (tools_for(fresh.model_id, self.registry, self.connectors) if callable(tools_for)
+                               else visible_registry(self.registry, self.connectors))
             async for event in run_agent(
                 messages=messages,
                 provider=provider,

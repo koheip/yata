@@ -27,6 +27,32 @@ const FALLBACK_PRESETS: RoutinePreset[] = [
   { id: "morning", label: "毎朝 8:00", schedule: "0 8 * * *", schedule_kind: "cron" },
   { id: "hourly", label: "毎時 0分", schedule: "0 * * * *", schedule_kind: "cron" },
   { id: "monday", label: "毎週月曜 9:00", schedule: "0 9 * * 1", schedule_kind: "cron" },
+  { id: "weekday", label: "平日 8:30", schedule: "30 8 * * 1-5", schedule_kind: "cron" },
+  { id: "monthly25", label: "毎月25日 9:00", schedule: "0 9 25 * *", schedule_kind: "cron" },
+]
+
+/** 日本の小さな会社・個人事業でよく使う決まった仕事。押すと入力欄が埋まる。 */
+const TEMPLATES = [
+  {
+    name: "朝の未対応まとめ",
+    preset: "weekday",
+    prompt: "Chatwork の未読とメンション、Backlog で自分が担当の未完了の課題、今日の予定をまとめて。急ぎのものを先に、返事が必要なものには返信の下書きもつけて。今日が祝日ならそう伝えて。",
+  },
+  {
+    name: "今週の段取り",
+    preset: "monday",
+    prompt: "今週の予定と、期限が今週の課題・タスクを曜日ごとに並べて。祝日があれば jp_calendar で確かめて書いて。",
+  },
+  {
+    name: "月末の請求書チェック",
+    preset: "monthly25",
+    prompt: "今月の請求書（freee・マネーフォワード クラウド請求書）を確かめて、毎月請求している取引先でまだ作っていないところがあれば教えて。支払期限は月末締め翌月末払いとして、jp_calendar で土日・祝日を確かめて書いて。",
+  },
+  {
+    name: "業界ニュース",
+    preset: "morning",
+    prompt: "自分の仕事に関係するきのうからのニュースを3つ、出典の URL つきで短くまとめて。",
+  },
 ]
 
 function formatWhen(iso: string | null): string {
@@ -81,16 +107,16 @@ export function RoutinesSection({ routines, presets, onCreate, onToggle, onToggl
   }
 
   return (
-    <div className="max-h-64 overflow-y-auto px-4 py-3">
+    <section className="flex flex-col">
       <div className="mb-2 flex items-center justify-between gap-2">
-        <p className="text-xs font-medium tracking-wide text-muted-foreground">ルーティン</p>
+        <h3 className="text-base font-bold">ルーティン</h3>
         <Button type="button" size="xs" variant="outline" onClick={() => setOpen(true)}>
           追加
         </Button>
       </div>
       {routines.length === 0 ? (
         <p className="text-sm text-muted-foreground">
-          まだありません。毎朝 8:00、毎時、毎週月曜 9:00 を登録できます。チャットに「毎朝8時にニュースを要約して」と送っても登録されます。
+          まだありません。毎朝・平日・毎週月曜・毎月25日などに登録できます。チャットに「毎朝8時にニュースを要約して」と送っても登録されます。
         </p>
       ) : (
         <ul className="space-y-3">
@@ -149,6 +175,23 @@ export function RoutinesSection({ routines, presets, onCreate, onToggle, onToggl
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-3">
+              <div className="flex flex-wrap gap-1.5" aria-label="よく使うルーティン">
+                {TEMPLATES.map((template) => (
+                  <Button
+                    key={template.name}
+                    type="button"
+                    size="xs"
+                    variant="outline"
+                    onClick={() => {
+                      setName(template.name)
+                      setPrompt(template.prompt)
+                      if (options.some((option) => option.id === template.preset)) setPreset(template.preset)
+                    }}
+                  >
+                    {template.name}
+                  </Button>
+                ))}
+              </div>
               <label className="grid gap-1 text-sm">
                 名前
                 <input
@@ -215,6 +258,6 @@ export function RoutinesSection({ routines, presets, onCreate, onToggle, onToggl
           </form>
         </DialogContent>
       </Dialog>
-    </div>
+    </section>
   )
 }

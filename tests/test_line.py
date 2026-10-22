@@ -112,7 +112,7 @@ def test_main_starts_webhook_only_with_secret(monkeypatch, tmp_path, secret, web
         _env_file=None, yata_db=str(tmp_path / "yata.db"), line_channel_secret=secret,
         line_channel_access_token=TOKEN, line_allowed_user_ids="Uowner", yata_scheduler_enabled=False,
     ))
-    main_module.main([])
+    main_module.main(["--no-browser"])
     assert calls == (["webhook"] if webhook else ["main"])
 
 
@@ -135,7 +135,7 @@ async def test_connector_and_secret_free_api(tmp_path):
         response = await client.get("/api/connectors")
         assert response.status_code == 200
         assert SECRET not in response.text and TOKEN not in response.text
-        line = response.json()["connectors"][-1]
+        line = next(c for c in response.json()["connectors"] if c["id"] == "line")
         assert line["id"] == "line" and line["note"] == "許可ユーザー: 1 人"
     assert not any(route.path.startswith("/line/") for route in app.routes)
 
@@ -551,3 +551,38 @@ async def test_webhook_bind_failure_keeps_main_server_running(monkeypatch, caplo
     ), 1)
     assert completed == [True]
     assert "LINE Webhook を 127.0.0.1:8742 で起動できませんでした。LINE_WEBHOOK_PORT を確認してください。" in caplog.text
+
+
+async def test_broadcast_and_quota_tools():
+    import httpx as _httpx
+
+    from yata.connectors.base import ConnectorRegistry as _Registry
+    from yata.connectors.line import LineConnector as _Line
+    from yata.line.client import LineClient as _Client
+    from yata.tools.base import ToolContext as _Ctx
+    from yata.tools.line import LineBroadcastTool, LineMessageQuotaTool
+    from yata.tools.policy import describe_action as _describe
+
+    sent = []
+
+    def handler(request):
+        sent.append(request)
+        if request.url.path.endswith("/quota"):
+            return _httpx.Response(200, json={"type": "limited", "value": 200})
+        if request.url.path.endswith("/consumption"):
+            return _httpx.Response(200, json={"totalUsage": 12})
+        return _httpx.Response(200, json={})
+
+    factory = lambda token: _Client(token, transport=_httpx.MockTransport(handler))  # noqa: E731
+    registry = _Registry()
+    registry.register(_Line("secret-x", "token-broadcast-x", "Uowner"))
+    ctx = _Ctx("conv", None, None, None, True, connectors=registry)
+    assert LineBroadcastTool.risk == Risk.EXTERNAL and LineMessageQuotaTool.risk == Risk.READ
+    quota = await LineMessageQuotaTool(factory).run({}, ctx)
+    assert quota.ok and "12 通 / 上限 200 通" in quota.content
+    result = await LineBroadcastTool(factory).run({"text": "本日は臨時休業です"}, ctx)
+    assert result.ok and sent[-1].url.path.endswith("/broadcast")
+    assert "本日は臨時休業です" in sent[-1].content.decode()
+    assert "取り消せません" in _describe(LineBroadcastTool(), {"text": "a"})
+    empty = await LineBroadcastTool(factory).run({"text": "  "}, ctx)
+    assert not empty.ok

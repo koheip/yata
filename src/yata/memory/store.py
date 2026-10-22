@@ -15,6 +15,15 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from yata.bots import (
+    DEFAULT_BOT_ID,
+    DEFAULT_BOT_JOB,
+    DEFAULT_BOT_NAME,
+    BotError,
+    check_look,
+    clean_job,
+    clean_name,
+)
 from yata.llm.types import LLMMessage, ToolCall
 
 
@@ -36,6 +45,18 @@ class Conversation:
     id: str
     title: str
     model_id: str
+    created_at: str
+    updated_at: str
+    bot_id: str = DEFAULT_BOT_ID
+
+
+@dataclass
+class Bot:
+    id: str
+    name: str
+    job: str
+    color: str
+    accessory: str
     created_at: str
     updated_at: str
 
@@ -115,10 +136,36 @@ class MemoryStore:
                     value TEXT NOT NULL,
                     updated_at TEXT NOT NULL
                 );
+
+                CREATE TABLE IF NOT EXISTS bots (
+                    id TEXT PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    job TEXT NOT NULL,
+                    color TEXT NOT NULL,
+                    accessory TEXT NOT NULL,
+                    created_at TEXT NOT NULL,
+                    updated_at TEXT NOT NULL
+                );
                 """
             )
+            columns = {row["name"] for row in conn.execute("PRAGMA table_info(conversations)")}
+            if "bot_id" not in columns:
+                # 以前の会話はすべて既定のボット「ヤタ」のものとして扱う。
+                conn.execute(
+                    f"ALTER TABLE conversations ADD COLUMN bot_id TEXT NOT NULL DEFAULT '{DEFAULT_BOT_ID}'"
+                )
+            now = utcnow()
+            conn.execute(
+                """
+                INSERT OR IGNORE INTO bots (id, name, job, color, accessory, created_at, updated_at)
+                VALUES (?, ?, ?, 'purple', 'none', ?, ?)
+                """,
+                (DEFAULT_BOT_ID, DEFAULT_BOT_NAME, DEFAULT_BOT_JOB, now, now),
+            )
 
-    def create_conversation(self, model_id: str, title: str = "新しい会話") -> Conversation:
+    def create_conversation(
+        self, model_id: str, title: str = "新しい会話", bot_id: str = DEFAULT_BOT_ID
+    ) -> Conversation:
         now = utcnow()
         conversation = Conversation(
             id=uuid.uuid4().hex,
@@ -126,12 +173,13 @@ class MemoryStore:
             model_id=model_id,
             created_at=now,
             updated_at=now,
+            bot_id=bot_id,
         )
         with self._connect() as conn:
             conn.execute(
                 """
-                INSERT INTO conversations (id, title, model_id, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?)
+                INSERT INTO conversations (id, title, model_id, created_at, updated_at, bot_id)
+                VALUES (?, ?, ?, ?, ?, ?)
                 """,
                 (
                     conversation.id,
@@ -139,26 +187,37 @@ class MemoryStore:
                     conversation.model_id,
                     conversation.created_at,
                     conversation.updated_at,
+                    conversation.bot_id,
                 ),
             )
         return conversation
 
-    def list_conversations(self) -> list[Conversation]:
+    def list_conversations(self, bot_id: str | None = None) -> list[Conversation]:
         with self._connect() as conn:
-            rows = conn.execute(
-                """
-                SELECT id, title, model_id, created_at, updated_at
-                FROM conversations
-                ORDER BY updated_at DESC
-                """
-            ).fetchall()
+            if bot_id is None:
+                rows = conn.execute(
+                    """
+                    SELECT id, title, model_id, created_at, updated_at, bot_id
+                    FROM conversations
+                    ORDER BY updated_at DESC
+                    """
+                ).fetchall()
+            else:
+                rows = conn.execute(
+                    """
+                    SELECT id, title, model_id, created_at, updated_at, bot_id
+                    FROM conversations WHERE bot_id = ?
+                    ORDER BY updated_at DESC
+                    """,
+                    (bot_id,),
+                ).fetchall()
         return [_conversation(row) for row in rows]
 
     def get_conversation(self, conversation_id: str) -> Conversation | None:
         with self._connect() as conn:
             row = conn.execute(
                 """
-                SELECT id, title, model_id, created_at, updated_at
+                SELECT id, title, model_id, created_at, updated_at, bot_id
                 FROM conversations WHERE id = ?
                 """,
                 (conversation_id,),
@@ -181,6 +240,7 @@ class MemoryStore:
             model_id=model_id or current.model_id,
             created_at=current.created_at,
             updated_at=utcnow(),
+            bot_id=current.bot_id,
         )
         if updated.title == "":
             updated.title = current.title
@@ -194,6 +254,84 @@ class MemoryStore:
                 (updated.title, updated.model_id, updated.updated_at, updated.id),
             )
         return updated
+
+    # --- ボット -------------------------------------------------------------
+
+    def list_bots(self) -> list[Bot]:
+        with self._connect() as conn:
+            rows = conn.execute(
+                "SELECT * FROM bots ORDER BY CASE WHEN id = ? THEN 0 ELSE 1 END, created_at, id",
+                (DEFAULT_BOT_ID,),
+            ).fetchall()
+        return [_bot(row) for row in rows]
+
+    def get_bot(self, bot_id: str) -> Bot | None:
+        with self._connect() as conn:
+            row = conn.execute("SELECT * FROM bots WHERE id = ?", (bot_id,)).fetchone()
+        return _bot(row) if row else None
+
+    def create_bot(self, *, name: str, job: str | None, color: str, accessory: str) -> Bot:
+        check_look(color, accessory)
+        now = utcnow()
+        bot = Bot(
+            id=uuid.uuid4().hex,
+            name=clean_name(name),
+            job=clean_job(job),
+            color=color,
+            accessory=accessory,
+            created_at=now,
+            updated_at=now,
+        )
+        with self._connect() as conn:
+            conn.execute(
+                """
+                INSERT INTO bots (id, name, job, color, accessory, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                """,
+                (bot.id, bot.name, bot.job, bot.color, bot.accessory, bot.created_at, bot.updated_at),
+            )
+        return bot
+
+    def update_bot(
+        self,
+        bot_id: str,
+        *,
+        name: str | None = None,
+        job: str | None = None,
+        color: str | None = None,
+        accessory: str | None = None,
+    ) -> Bot | None:
+        current = self.get_bot(bot_id)
+        if current is None:
+            return None
+        updated = Bot(
+            id=current.id,
+            name=clean_name(name) if name is not None else current.name,
+            job=clean_job(job) if job is not None else current.job,
+            color=color if color is not None else current.color,
+            accessory=accessory if accessory is not None else current.accessory,
+            created_at=current.created_at,
+            updated_at=utcnow(),
+        )
+        check_look(updated.color, updated.accessory)
+        with self._connect() as conn:
+            conn.execute(
+                """
+                UPDATE bots SET name = ?, job = ?, color = ?, accessory = ?, updated_at = ?
+                WHERE id = ?
+                """,
+                (updated.name, updated.job, updated.color, updated.accessory, updated.updated_at, updated.id),
+            )
+        return updated
+
+    def delete_bot(self, bot_id: str) -> bool:
+        """ボットを消す。会話とルーティンは消さずに「ヤタ」へ引き継ぐ。"""
+        if bot_id == DEFAULT_BOT_ID:
+            raise BotError("「ヤタ」は消せません。")
+        with self._connect() as conn:
+            conn.execute("UPDATE conversations SET bot_id = ? WHERE bot_id = ?", (DEFAULT_BOT_ID, bot_id))
+            cursor = conn.execute("DELETE FROM bots WHERE id = ?", (bot_id,))
+        return cursor.rowcount > 0
 
     def delete_conversation(self, conversation_id: str) -> bool:
         with self._connect() as conn:
@@ -405,6 +543,19 @@ def _conversation(row: sqlite3.Row) -> Conversation:
         id=row["id"],
         title=row["title"],
         model_id=row["model_id"],
+        created_at=row["created_at"],
+        updated_at=row["updated_at"],
+        bot_id=row["bot_id"],
+    )
+
+
+def _bot(row: sqlite3.Row) -> Bot:
+    return Bot(
+        id=row["id"],
+        name=row["name"],
+        job=row["job"],
+        color=row["color"],
+        accessory=row["accessory"],
         created_at=row["created_at"],
         updated_at=row["updated_at"],
     )

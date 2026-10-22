@@ -1,5 +1,49 @@
 # ヤタ（Yata）
 
+<p align="center"><img src="docs/images/yata-icon.png" alt="ヤタのマスコット（紫の赤ちゃんカラス）" width="160"></p>
+
+**ヤタは、チャットで話しかけるだけで、調べものや毎日の作業を手伝ってくれる AI アシスタントです。** 日本語で話しかけてください。あなたの PC の中で動き、会話や記録も PC の中に保存します。
+
+<!-- スクリーンショット: docs/images/screenshot-chat.png を置いたら、次の行のコメントを外す -->
+<!-- ![ヤタのチャット画面](docs/images/screenshot-chat.png) -->
+
+## ヤタでできること
+
+- **調べもの**：Web で検索して、ページを読み、要点をまとめます。
+- **メールと予定**：Gmail を読んだり下書きを作ったりします。Google カレンダーの予定や空き時間も確認できます。
+- **LINE から話しかける**：スマホの LINE からヤタに質問できます。
+- **いつものサービスとつながる**：Chatwork のメッセージやタスク、Backlog の課題、kintone のレコード、freee とマネーフォワード クラウド請求書の請求書、LINE 公式アカウントのお知らせ配信、楽天市場の商品検索に対応しています。
+- **日本の仕事の計算**：祝日・営業日・和暦の計算、インボイス（適格請求書）の消費税の計算をします。敬語の文面も書きます。
+- **決まった作業を自動で**：「毎朝8時にニュースを要約して」のように頼むと、毎日その時刻に実行します。結果を LINE に届けることもできます。
+- **覚えておく**：あなたについての短いメモを覚えて、次の会話に活かします。
+- **ブラウザを動かす**：Web ページを開いて、クリックや入力をします。
+
+<!-- デモ GIF: docs/images/demo-line.gif を置いたら、次の行のコメントを外す -->
+<!-- ![LINE から話しかけるデモ](docs/images/demo-line.gif) -->
+
+## 安心して使うために
+
+- **外に出る操作は、必ずあなたが許可してから。** メールやメッセージの送信、予定の作成、経費の登録などの前に「許可する」「拒否する」を聞きます。
+- **データは手元に。** 会話や記録は PC の中に保存します。AI への質問だけは、選んだ AI サービスに送られます（Ollama なら PC の外にも出ません）。
+- **AI は自分で選べます。** Gemini、OpenAI、Anthropic、xAI（Grok）、DeepSeek、Kimi、Mistral、Groq、OpenRouter、PLaMo のどれかの API キーを1つ用意します。Gemini の無料枠や、PC の中で動く AI（Ollama・LM Studio・llama.cpp・Jan・vLLM・LocalAI など）を使えば、無料でも使えます。
+- **完全オフラインモード。** 設定でオンにすると、PC の中の AI だけを使い、ネット検索・ブラウザ・外部の連携・LINE への通知を止めます。会話が PC の外に出ません。
+
+## はじめかた（Windows）
+
+**アプリ版（かんたん）**：Microsoft Store の「入手」か、[Releases](https://github.com/koheip/yata/releases) の `Yata-Setup-<版>.exe` を開くだけで入ります（いまは配布の準備中です。作り方は [docs/distribution.md](docs/distribution.md)）。
+
+**ソースから動かす**：[uv](https://docs.astral.sh/uv/) と [Node.js](https://nodejs.org/) と Git が入っていれば、PowerShell で次の1行を実行するだけで準備できます。
+
+```powershell
+git clone https://github.com/koheip/yata.git; cd yata; powershell -ExecutionPolicy Bypass -File scripts\install.ps1
+```
+
+足りないものがあれば、スクリプトが入れ方を案内します（勝手にはインストールしません）。準備ができたら `uv run yata` で起動します。はじめて開くと「AI をつなぎましょう」という案内が出るので、画面の手順どおりに API キーを貼り付けてください（Google Gemini なら無料です）。`.env` を書きかえる必要はありません。ヤタ専用のウィンドウで画面が自動で開きます（開かないときは <http://127.0.0.1:8741> をブラウザで開いてください）。
+
+---
+
+ここから下は、開発者向けの説明です。
+
 調べる、読む、ブラウザを動かす。個人のための汎用 AI アシスタントです。名前のヤタは、神武天皇を導いた八咫烏（やたがらす）から来ています。道を示す案内役、という役割です。
 
 モデルがツールを呼び、結果を見て、もう一度考える。その途中経過がチャットに流れ、クリックや入力の前には確認が入ります。会話と、ユーザーについての短い記憶は SQLite に残ります。
@@ -194,9 +238,19 @@ cloudflared の quick tunnel URL は起動のたびに変わるため、その�
 | `OPENAI_API_KEY` | OpenAI |
 | `ANTHROPIC_API_KEY` | Anthropic |
 | `OLLAMA_BASE_URL` | 既定 `http://127.0.0.1:11434` |
-| `YATA_MODEL` | 既定のモデル id（`gemini` / `openai` / `anthropic` / `ollama` / `demo`） |
+| `YATA_MODEL` | 既定のモデル id（`gemini` / `openai` / `anthropic` / `xai` / `deepseek` / `kimi` / `mistral` / `groq` / `openrouter` / `plamo` / `ollama` / `lmstudio` / `llamacpp` / `jan` / `vllm` / `custom` / `demo`） |
+| `XAI_API_KEY` など | ほかの AI のキー（`DEEPSEEK_` `KIMI_` `MISTRAL_` `GROQ_` `OPENROUTER_` `PLAMO_`）。`*_MODEL` でモデル名も指定できる（空ならキー保存時に選ぶ） |
+| `LMSTUDIO_BASE_URL` など | PC の中の AI の URL（`LLAMACPP_` `JAN_` `VLLM_`）。既定は各アプリの標準ポート |
+| `CUSTOM_LLM_BASE_URL` / `CUSTOM_LLM_MODEL` / `CUSTOM_LLM_API_KEY` | その他の OpenAI 互換サーバー |
+| `YATA_LOCAL_BROWSER_TOOLS` | PC の中の AI にもブラウザ操作のツールを渡す（既定 `false`。小さいモデルが迷わないように） |
+| `YATA_OFFLINE` | 完全オフラインモード（既定 `false`。設定画面でも切り替えられる） |
+| `BACKLOG_SPACE` / `BACKLOG_API_KEY` | Backlog のスペースの URL と API キー |
+| `KINTONE_DOMAIN` / `KINTONE_API_TOKENS` | kintone の URL とアプリの API トークン（カンマ区切り） |
+| `MONEYFORWARD_CLIENT_ID` / `MONEYFORWARD_CLIENT_SECRET` | マネーフォワード クラウド請求書のアプリ（アプリポータルで作成） |
 | `YATA_*_MODEL` | 上流のモデル名 |
 | `YATA_MAX_STEPS` | 1ターンのモデル呼び出し上限（既定 8） |
+| `YATA_OPEN_BROWSER` | 起動したら画面を開く（既定 `true`。`--no-browser` でも止められる） |
+| `YATA_APP_WINDOW` | Edge / Chrome の専用ウィンドウで開く（既定 `true`。`false` か `--browser-tab` でいつものブラウザのタブ） |
 | `YATA_ALLOW_PRIVATE_URLS` | プライベートアドレスを開くか |
 | `YATA_SCHEDULER_ENABLED` | ルーティンのスケジューラ（既定 `true`） |
 | `YATA_SCHEDULER_INTERVAL_SECONDS` | 期限の確認間隔（既定 30 秒） |
@@ -233,6 +287,8 @@ src/yata/          エージェント、モデル、ツール、記憶、ルー�
 frontend/               チャット UI
 tests/                  上記のテスト
 scripts/run.sh          セットアップ済みなら、これだけで起動
+packaging/              Windows アプリ版（PyInstaller・Setup.exe・MSIX）の設定
+.github/workflows/      タグを push すると配布ファイルを作る
 .env.example            設定の見本
 ```
 

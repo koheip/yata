@@ -1,0 +1,27 @@
+# PyInstaller が Yata.exe に埋めこむバージョン情報。
+# 番号は .github/workflows/release.yml がタグから書きかえる（0.1.0 の部分）。
+VSVersionInfo(
+  ffi=FixedFileInfo(
+    filevers=(0, 1, 0, 0),
+    prodvers=(0, 1, 0, 0),
+    mask=0x3F,
+    flags=0x0,
+    OS=0x40004,
+    fileType=0x1,
+    subtype=0x0,
+    date=(0, 0),
+  ),
+  kids=[
+    StringFileInfo([
+      StringTable("041104B0", [
+        StringStruct("CompanyName", "Yata contributors"),
+        StringStruct("FileDescription", "ヤタ"),
+        StringStruct("FileVersion", "0.1.0"),
+        StringStruct("ProductName", "ヤタ"),
+        StringStruct("ProductVersion", "0.1.0"),
+        StringStruct("OriginalFilename", "Yata.exe"),
+      ])
+    ]),
+    VarFileInfo([VarStruct("Translation", [0x0411, 1200])]),
+  ],
+)

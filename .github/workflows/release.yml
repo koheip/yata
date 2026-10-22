@@ -1,0 +1,109 @@
+# v0.2.0 のようなタグを push すると、Windows 用の配布ファイルを作る。
+#   - Yata-Setup-<版>.exe : GitHub やサイトで配るインストーラー（署名なし）
+#   - Yata-<版>.msix      : Microsoft Store に出す用（Store が署名する）
+# 手で動かすこともできる（Actions タブの「Run workflow」）。
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Version from tag
+        id: ver
+        shell: pwsh
+        run: |
+          $v = "${{ github.ref_name }}"
+          if ($v -notmatch '^v(\d+)\.(\d+)\.(\d+)$') { $v = "v0.0.0" }
+          $v = $v.TrimStart("v")
+          "version=$v" >> $env:GITHUB_OUTPUT
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Test
+        run: uv run pytest -q
+
+      - name: Build frontend
+        run: |
+          npm --prefix frontend ci
+          npm --prefix frontend run build
+
+      - name: Stamp version
+        shell: pwsh
+        run: |
+          $v = "${{ steps.ver.outputs.version }}"
+          $t = $v -replace '\.', ', '
+          $f = "packaging/windows/version_info.txt"
+          (Get-Content $f -Raw -Encoding utf8) -replace '0, 1, 0, 0', "$t, 0" -replace '"0\.1\.0"', "`"$v`"" | Set-Content $f -Encoding utf8
+          $m = "packaging/msix/AppxManifest.xml"
+          (Get-Content $m -Raw -Encoding utf8) -replace 'Version="0\.1\.0\.0"', "Version=`"$v.0`"" | Set-Content $m -Encoding utf8
+
+      - name: PyInstaller
+        run: uv run --with pyinstaller pyinstaller packaging/yata.spec --noconfirm
+
+      - name: Smoke test
+        shell: pwsh
+        run: |
+          $env:YATA_HOME = "$env:RUNNER_TEMP\yata-home"
+          $env:YATA_OPEN_BROWSER = "false"
+          $p = Start-Process dist\Yata\Yata.exe -PassThru
+          $ok = $false
+          for ($i = 0; $i -lt 60; $i++) {
+            Start-Sleep 1
+            try { $r = Invoke-RestMethod http://127.0.0.1:8741/api/health; if ($r.name -eq "yata") { $ok = $true; break } } catch {}
+          }
+          $html = (Invoke-WebRequest http://127.0.0.1:8741/ -UseBasicParsing).Content
+          Stop-Process $p -Force
+          if (-not $ok -or $html -notmatch '<div id="root">') { Get-Content "$env:YATA_HOME\logs\yata.log" -ErrorAction SilentlyContinue; throw "起動しませんでした" }
+
+      - name: Installer (Inno Setup)
+        shell: pwsh
+        run: |
+          choco install innosetup --no-progress -y
+          & "${env:ProgramFiles(x86)}\Inno Setup 6\iscc.exe" /DAppVersion=${{ steps.ver.outputs.version }} packaging\windows\yata.iss
+
+      - name: MSIX
+        shell: pwsh
+        run: |
+          $v = "${{ steps.ver.outputs.version }}"
+          $stage = "$env:RUNNER_TEMP\msix"
+          New-Item -ItemType Directory $stage | Out-Null
+          Copy-Item packaging\msix\AppxManifest.xml $stage
+          Copy-Item packaging\msix\Assets $stage -Recurse
+          Copy-Item dist\Yata "$stage\Yata" -Recurse
+          $kit = Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\bin\*\x64\makeappx.exe" | Sort-Object FullName | Select-Object -Last 1
+          & $kit.FullName pack /d $stage /p "dist\Yata-$v.msix" /o
+          if ($LASTEXITCODE -ne 0) { throw "makeappx failed" }
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: yata-windows-${{ steps.ver.outputs.version }}
+          path: |
+            dist/Yata-Setup-*.exe
+            dist/Yata-*.msix
+
+      - name: GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: true
+          files: |
+            dist/Yata-Setup-*.exe
+            dist/Yata-*.msix

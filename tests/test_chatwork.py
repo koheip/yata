@@ -52,6 +52,113 @@ def mock_http(monkeypatch):
     return install
 
 
+@pytest.fixture(autouse=True)
+def me_requests(monkeypatch):
+    """接続確認の GET /me を実ネットワークに出さない。既定ではトークンを正しいものとして扱う。"""
+    requests = []
+    client_type = httpx.Client
+
+    def handler(request):
+        requests.append(request)
+        return httpx.Response(200, json={"account_id": 1, "name": "テスト太郎"})
+
+    def make_client(**kwargs):
+        kwargs["transport"] = kwargs.get("transport") or httpx.MockTransport(handler)
+        return client_type(**kwargs)
+
+    monkeypatch.setattr("yata.connectors.chatwork.httpx.Client", make_client)
+    return requests
+
+
+def me_connector(response=None, error=None):
+    requests = []
+
+    def handler(request):
+        requests.append(request)
+        if error is not None:
+            raise error
+        return response
+
+    return ChatworkConnector(TOKEN, transport=httpx.MockTransport(handler)), requests
+
+
+def test_valid_token_is_checked_once_with_get_me() -> None:
+    connector, requests = me_connector(httpx.Response(200, json={"account_id": 1, "name": "テスト太郎"}))
+    assert connector.status() is ConnectorState.CONNECTED
+    assert connector.status() is ConnectorState.CONNECTED
+    assert len(requests) == 1
+    assert requests[0].method == "GET"
+    assert str(requests[0].url) == "https://api.chatwork.com/v2/me"
+    assert requests[0].headers["X-ChatWorkToken"] == TOKEN
+    assert connector.status_note() == "トークン確認済み（テスト太郎）"
+
+
+def test_invalid_token_shows_japanese_message_and_hides_tools() -> None:
+    connector, requests = me_connector(httpx.Response(401, json={"errors": [f"Invalid token {TOKEN}"]}))
+    assert connector.status() is ConnectorState.NOT_CONNECTED
+    assert connector.status() is ConnectorState.NOT_CONNECTED
+    assert len(requests) == 1
+    note = connector.status_note()
+    assert note is not None and "API トークンが正しくありません" in note and "CHATWORK_API_TOKEN" in note
+    assert TOKEN not in note
+    connectors = ConnectorRegistry()
+    connectors.register(connector)
+    names = {tool_type().name for tool_type in TOOL_TYPES}
+    assert not (set(visible_registry(build_registry(), connectors).names()) & names)
+
+
+@pytest.mark.parametrize(
+    "response, error, expected",
+    [
+        (None, httpx.ConnectError(f"failed with {TOKEN}"), "接続できず"),
+        (httpx.Response(500, text=TOKEN), None, "（500）"),
+        (httpx.Response(429), None, "（429）"),
+    ],
+)
+def test_unknown_result_keeps_connected_and_retries_later(monkeypatch, response, error, expected) -> None:
+    now = [1000.0]
+    monkeypatch.setattr("yata.connectors.chatwork.time.monotonic", lambda: now[0])
+    connector, requests = me_connector(response, error)
+    assert connector.status() is ConnectorState.CONNECTED
+    note = connector.status_note()
+    assert note is not None and expected in note and TOKEN not in note
+    connector.status()
+    assert len(requests) == 1
+    now[0] += 61
+    connector.status()
+    assert len(requests) == 2
+
+
+async def test_status_inside_event_loop_never_uses_network() -> None:
+    connector, requests = me_connector(httpx.Response(401))
+    assert connector.status() is ConnectorState.CONNECTED
+    assert connector.status_note() is None
+    assert not requests
+
+
+def test_connectors_api_reports_invalid_token(tmp_path, me_requests, monkeypatch) -> None:
+    from fastapi.testclient import TestClient
+
+    from yata.api.app import create_app
+    from yata.config import Settings
+
+    me_requests.clear()
+    client_type = httpx.Client
+    monkeypatch.setattr(
+        "yata.connectors.chatwork.httpx.Client",
+        lambda **kwargs: client_type(**{**kwargs, "transport": httpx.MockTransport(lambda r: httpx.Response(401))}),
+    )
+    settings = Settings(_env_file=None, yata_db=str(tmp_path / "yata.db"), chatwork_api_token=TOKEN,
+                        yata_scheduler_enabled=False)
+    with TestClient(create_app(settings)) as client:
+        response = client.get("/api/connectors")
+    assert response.status_code == 200
+    assert TOKEN not in response.text
+    chatwork = next(item for item in response.json()["connectors"] if item["id"] == "chatwork")
+    assert chatwork["status"] == "not_connected"
+    assert "API トークンが正しくありません" in chatwork["note"]
+
+
 @pytest.mark.parametrize("token", [None, "", "  ", TOKEN])
 async def test_connector_status_and_disconnect(token) -> None:
     connector = ChatworkConnector(token)

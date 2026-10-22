@@ -20,6 +20,8 @@ PRESETS: dict[str, tuple[str, str, str]] = {
     "morning": ("cron", "0 8 * * *", "毎朝 8:00"),
     "hourly": ("cron", "0 * * * *", "毎時 0分"),
     "monday": ("cron", "0 9 * * 1", "毎週月曜 9:00"),
+    "weekday": ("cron", "30 8 * * 1-5", "平日 8:30"),
+    "monthly25": ("cron", "0 9 25 * *", "毎月25日 9:00"),
 }
 
 _DIGITS = str.maketrans("０１２３４５６７８９", "0123456789")

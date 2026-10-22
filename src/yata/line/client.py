@@ -82,5 +82,30 @@ class LineClient:
                 messages = messages[5:]
         await self.push(to, messages)
 
+    async def broadcast(self, messages: list[dict]) -> int:
+        """友だち全員に送る（公式アカウントの一斉配信）。1回に5件まで。"""
+        if not 1 <= len(messages) <= 5:
+            raise LineError("一斉配信は 1～5 件のメッセージにしてください。")
+        return await self._request("broadcast", {"messages": messages})
+
+    async def quota(self) -> dict:
+        """今月の配信の上限と、使った数。"""
+        result = {}
+        for key, path in (("limit", "quota"), ("used", "quota/consumption")):
+            try:
+                async with httpx.AsyncClient(transport=self._transport, timeout=15) as client:
+                    response = await client.get(
+                        f"https://api.line.me/v2/bot/message/{path}",
+                        headers={"Authorization": f"Bearer {self._token}"},
+                    )
+            except httpx.HTTPError:
+                raise LineError("LINE との通信に失敗しました。接続を確認してください。") from None
+            if response.status_code == 401:
+                raise LineError("LINE のトークン無効です。LINE_CHANNEL_ACCESS_TOKEN を確認してください。")
+            if response.status_code >= 400:
+                raise LineError(f"LINE API エラー（{response.status_code}）が発生しました。")
+            result[key] = response.json()
+        return result
+
     async def send_text(self, to: str, text: str, reply_token: str | None = None):
         await self.send_messages(to, [{"type": "text", "text": part} for part in split_text(text)], reply_token)

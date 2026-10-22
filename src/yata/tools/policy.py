@@ -20,6 +20,24 @@ class ToolPolicy:
 def describe_action(tool: Tool, arguments: dict) -> str:
     if tool.name == "line_push_message":
         return f"自分の LINE にメッセージを送信します。\n本文:\n{arguments.get('text', '')}"
+    if tool.name == "mf_create_billing":
+        items = arguments.get("items") if isinstance(arguments.get("items"), list) else []
+        rows = "\n".join(
+            f"・{i.get('name', '')}　{i.get('price', '')} 円 × {i.get('quantity', '')}（{i.get('tax') or '10%'}）"
+            for i in items if isinstance(i, dict)
+        )
+        return (
+            "マネーフォワード クラウド請求書に、請求書を下書きで作ります。\n"
+            f"件名: {arguments.get('title', '')}\n"
+            f"宛先の部門 ID: {arguments.get('department_id', '')}\n"
+            f"請求日: {arguments.get('billing_date', '')}　お支払期限: {arguments.get('due_date', '')}\n"
+            f"品目（税抜）:\n{rows}"
+        )
+    if tool.name == "line_broadcast":
+        return (
+            "LINE 公式アカウントの友だち全員に一斉配信します（取り消せません）。\n"
+            f"本文:\n{arguments.get('text', '')}"
+        )
     if tool.name == "freee_create_expense_deal":
         amount = arguments.get("amount", 0)
         formatted = f"{amount:,}" if type(amount) is int else str(amount)
@@ -33,6 +51,26 @@ def describe_action(tool: Tool, arguments: dict) -> str:
             f"取引先 ID: {arguments.get('partner_id') if arguments.get('partner_id') is not None else '未指定'}\n"
             f"内容: {arguments.get('description', '')}"
         )
+    if tool.name == "backlog_add_issue":
+        return (
+            "Backlog に課題を追加します。\n"
+            f"プロジェクト ID: {arguments.get('project_id', '')}\n"
+            f"種別 ID: {arguments.get('issue_type_id', '')}\n"
+            f"件名: {arguments.get('summary', '')}\n"
+            f"優先度: {arguments.get('priority') or '中'}\n"
+            f"期限: {arguments.get('due_date') or '未設定'}\n"
+            f"詳細:\n{arguments.get('description') or ''}"
+        )
+    if tool.name == "backlog_add_comment":
+        return f"Backlog の課題 {arguments.get('issue_key', '')} にコメントを書きます。\n本文:\n{arguments.get('content', '')}"
+    if tool.name in ("kintone_add_record", "kintone_update_record"):
+        record = arguments.get("record") if isinstance(arguments.get("record"), dict) else {}
+        lines = "\n".join(f"{code}: {value}" for code, value in record.items())
+        if tool.name == "kintone_add_record":
+            head = f"kintone のアプリ {arguments.get('app', '')} にレコードを追加します。"
+        else:
+            head = f"kintone のアプリ {arguments.get('app', '')} のレコード {arguments.get('id', '')} を更新します。"
+        return f"{head}\n{lines}"
     if tool.name == "browser_click":
         return f"ブラウザで「{arguments.get('selector', '')}」をクリックします。"
     if tool.name == "browser_type":

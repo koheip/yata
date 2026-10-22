@@ -68,6 +68,21 @@ def test_default_catalog_has_the_mvp_tools() -> None:
         "freee_get_trial_balance",
         "freee_create_expense_deal",
         "line_push_message",
+        "backlog_list_projects",
+        "backlog_search_issues",
+        "backlog_add_issue",
+        "backlog_add_comment",
+        "kintone_get_fields",
+        "kintone_get_records",
+        "kintone_add_record",
+        "kintone_update_record",
+        "line_message_quota",
+        "line_broadcast",
+        "mf_list_partners",
+        "mf_list_billings",
+        "mf_create_billing",
+        "jp_calendar",
+        "jp_invoice_tax",
     ]
     assert registry.get("browser_click").risk == Risk.MUTATE
     assert registry.get("browser_type").risk == Risk.MUTATE

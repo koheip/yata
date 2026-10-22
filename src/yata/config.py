@@ -27,7 +27,12 @@ class Settings(BaseSettings):
 
     yata_model: str = "gemini"
     yata_host: str = "127.0.0.1"
+    # この名前で来たリクエストだけを受け付ける（DNS リバインディング対策）。カンマ区切り。
+    yata_allowed_hosts: str = "127.0.0.1,localhost,::1"
     yata_port: int = 8741
+    # 起動したら画面を開く。yata_app_window なら Edge / Chrome の専用ウィンドウで開く。
+    yata_open_browser: bool = True
+    yata_app_window: bool = True
     yata_db: str = "data/yata.db"
     yata_max_steps: int = Field(default=8, ge=1, le=24)
     yata_allow_private_urls: bool = True
@@ -36,6 +41,41 @@ class Settings(BaseSettings):
     yata_openai_model: str = "gpt-4o-mini"
     yata_anthropic_model: str = "claude-sonnet-4-5"
     yata_ollama_model: str = "gemma3:4b"
+
+    # OpenAI 互換で話せるネットの AI（yata/llm/providers.py）。モデル名は空ならキー保存時に選ぶ。
+    xai_api_key: str | None = None
+    xai_model: str | None = None
+    deepseek_api_key: str | None = None
+    deepseek_model: str | None = None
+    kimi_api_key: str | None = None
+    kimi_model: str | None = None
+    mistral_api_key: str | None = None
+    mistral_model: str | None = None
+    groq_api_key: str | None = None
+    groq_model: str | None = None
+    openrouter_api_key: str | None = None
+    openrouter_model: str | None = None
+    plamo_api_key: str | None = None
+    plamo_model: str | None = None
+
+    # パソコンの中で動く AI のサーバー（Ollama のほか）。モデルは読み込まれているものを使う。
+    lmstudio_base_url: str = "http://127.0.0.1:1234/v1"
+    llamacpp_base_url: str = "http://127.0.0.1:8080/v1"
+    jan_base_url: str = "http://127.0.0.1:1337/v1"
+    vllm_base_url: str = "http://127.0.0.1:8000/v1"
+    # それぞれで使うモデル。空なら、いま読み込まれているモデルを使う。
+    lmstudio_model: str | None = None
+    llamacpp_model: str | None = None
+    jan_model: str | None = None
+    vllm_model: str | None = None
+    # その他の OpenAI 互換サーバー。モデル名が空なら、サーバーにある最初のモデルを使う。
+    custom_llm_base_url: str | None = None
+    custom_llm_api_key: str | None = None
+    custom_llm_model: str | None = None
+    # パソコンの中の AI には、ブラウザ操作のツールを渡さない（小さいモデルが迷わないように）。
+    yata_local_browser_tools: bool = False
+    # 完全オフライン。パソコンの中の AI だけを使い、ネット検索・ページ取得・ブラウザ・外部の連携を止める。
+    yata_offline: bool = False
 
     yata_scheduler_enabled: bool = True
     yata_scheduler_interval_seconds: int = Field(default=30, ge=5, le=3600)
@@ -66,6 +106,21 @@ class Settings(BaseSettings):
     rakuten_access_key: str | None = None
     rakuten_affiliate_id: str | None = None
     rakuten_origin: str | None = None
+
+    # Backlog 連携。スペースの URL（例: https://example.backlog.jp）と API キー。
+    backlog_space: str | None = None
+    backlog_api_key: str | None = None
+
+    # マネーフォワード クラウド請求書。アプリポータルで作ったアプリの Client ID と Client Secret。
+    moneyforward_client_id: str | None = None
+    moneyforward_client_secret: str | None = None
+
+    # kintone 連携。URL（例: https://example.cybozu.com）とアプリの API トークン（カンマ区切り）。
+    kintone_domain: str | None = None
+    kintone_api_tokens: str | None = None
+
+    def allowed_hosts(self) -> list[str]:
+        return [item.strip() for item in self.yata_allowed_hosts.split(",") if item.strip()]
 
     def database_path(self) -> Path:
         return Path(self.yata_db)

@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>会話を外に出さない「完全オフライン」の使い方</title>
+<meta name="description" content="Ollama や LM Studio をヤタにつなぎ、完全オフラインモードで会話をパソコンの外に出さずに使う方法。">
+<link rel="icon" href="../favicon.ico">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;700&family=Zen+Maru+Gothic:wght@700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../style.css">
+<!-- AdSense: 審査に通ったら、ここに AdSense のコードを貼る（site/README.md を参照） -->
+</head>
+<body>
+<header class="wrap top">
+  <a class="logo" href="../index.html"><img src="../images/yata.svg" alt="" width="34" height="34">ヤタ</a>
+  <nav aria-label="サイト内">
+    <a href="../index.html#features">できること</a>
+    <a href="../articles/index.html">使い方</a>
+    <a href="../index.html#download">ダウンロード</a>
+  </nav>
+</header>
+<main class="narrow">
+<article>
+<h1>会話を外に出さない「完全オフライン」の使い方</h1>
+<p>お客様の情報や社外秘の資料を AI に見せるのは不安、という方のために、ヤタには「完全オフラインモード」があります。パソコンの中で動く AI だけを使い、会話がパソコンの外に出ません。</p>
+<h2>1. パソコンの中で動く AI を用意する</h2>
+<p>ヤタは、次のどれでも使えます。いちばん簡単なのは LM Studio か Ollama です。</p>
+<ul>
+  <li><a href="https://lmstudio.ai/">LM Studio</a>：アプリでモデルを選んで読み込み、「Developer」→「Start Server」を押す。</li>
+  <li><a href="https://ollama.com/">Ollama</a>：入れたあと、モデルを入れる（例：<code>ollama pull gemma3:4b</code>）。</li>
+  <li><a href="https://jan.ai/">Jan</a>、llama.cpp、vLLM、LocalAI など OpenAI 互換のサーバー。</li>
+</ul>
+<p>目安として、メモリ 16GB のパソコンなら 4B〜8B くらいの小さめのモデルが快適に動きます。</p>
+<div class="ad" aria-label="広告"></div>
+<h2>2. ヤタで選ぶ</h2>
+<ol>
+  <li>ヤタの「設定」→「パソコンの中の AI」を開き、「確かめ直す」を押します。動いているものに「動いています」と出ます。</li>
+  <li>「いま使う AI」で、そのサーバーを選びます。</li>
+  <li>「完全オフラインモード」に印を付けます。</li>
+</ol>
+<h2>オフラインモードで止まるもの</h2>
+<p>ネット検索、ページの取得、ブラウザ操作、外部の連携（Chatwork・LINE など）、LINE への通知が止まります。祝日・営業日の計算や、インボイスの消費税の計算など、パソコンの中だけでできることは使えます。</p>
+<div class="note"><p>小さいモデルは、大きなクラウドの AI より間違えやすくなります。大事な数字は自分でも確かめてください。</p></div>
+</article>
+</main>
+<footer>
+  <div class="wrap">
+    <nav aria-label="サイトの情報">
+      <a href="../about.html">ヤタについて・連絡先</a>
+      <a href="../privacy.html">プライバシーポリシー</a>
+      <a href="https://github.com/koheip/yata">GitHub</a>
+    </nav>
+    <p>© ヤタ開発者。ヤタはオープンソースのソフトウェアです。</p>
+  </div>
+</footer>
+</body>
+</html>
