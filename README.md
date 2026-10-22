@@ -2,6 +2,8 @@
 
 <p align="center"><img src="docs/images/yata-icon.png" alt="ヤタのマスコット（紫の赤ちゃんカラス）" width="160"></p>
 
+> **ベータ版です。** まだ作りはじめたばかりで、うまく動かないところがあるかもしれません。困ったことや気になったことは、[Issues](https://github.com/koheip/yata/issues) で気軽に教えてください。
+
 **ヤタは、チャットで話しかけるだけで、調べものや毎日の作業を手伝ってくれる AI アシスタントです。** 日本語で話しかけてください。あなたの PC の中で動き、会話や記録も PC の中に保存します。
 
 <!-- スクリーンショット: docs/images/screenshot-chat.png を置いたら、次の行のコメントを外す -->
