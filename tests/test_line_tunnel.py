@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
 import sys
 
 import httpx
@@ -24,7 +25,9 @@ def test_find_cloudflared_uses_path(tmp_path):
     exe = tmp_path / ("cloudflared.exe" if sys.platform.startswith("win") else "cloudflared")
     exe.write_text("")
     exe.chmod(0o755)
-    assert find_cloudflared({"PATH": str(tmp_path)}) == str(exe)
+    found = find_cloudflared({"PATH": str(tmp_path)})
+    # Windows は大文字・小文字を区別しない（.exe が .EXE で返ることがある）
+    assert found is not None and os.path.normcase(found) == os.path.normcase(str(exe))
     assert find_cloudflared({"PATH": str(tmp_path / "none")}) is None or sys.platform.startswith("win")
 
 
