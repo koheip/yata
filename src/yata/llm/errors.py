@@ -6,6 +6,12 @@ from __future__ import annotations
 def humanize_provider_error(provider: str, exc: Exception) -> str:
     text = str(exc).strip()
     lowered = text.lower()
+    if provider == "kagi":
+        if "kagi がトークン" in text:
+            return text
+        if any(token in lowered for token in ("unauthorized", "permission", "forbidden")) or "401" in text or "403" in text:
+            return ("kagi に拒否されました。kagi のポリシー（このエージェントに許可された API）と、"
+                    "証明書の期限を確認してください。")
     if any(token in lowered for token in ("api key", "api_key", "unauthorized", "permission")) or "401" in text:
         return f"{provider} の API キーが拒否されました。.env のキーを確認してください。"
     if "429" in text or "rate limit" in lowered or "quota" in lowered:
