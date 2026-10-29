@@ -154,6 +154,8 @@ LiteLLM のような単一ラッパーも候補でした。この版では公式
 
 キーが無いプロバイダはモデル一覧で「利用不可」になり、送信前に API が拒否します。
 
+キーをヤタに置きたくない場合は、[kagi](https://github.com/koheip/kagi)（AI エージェント用のシークレット・ブローカー）を経由できます。ヤタは mTLS の証明書と数分で切れるトークンだけを持ち、本物のキーは kagi が通信の直前に付けます。設定は [docs/kagi.md](docs/kagi.md) を見てください。
+
 ### ツールと確認
 
 ツールは `name`、JSON Schema、`Risk`、`run()` を持つクラスです。登録は `tools/catalog.py` の `build_registry()` に1行足します。

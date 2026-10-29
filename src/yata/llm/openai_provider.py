@@ -71,10 +71,13 @@ class OpenAICompatibleProvider:
         base_url: str | None,
         provider_name: str,
         local: bool = False,
+        http_client=None,
     ):
         self.provider_name = provider_name
         self._api_key = api_key
         self._base_url = base_url
+        # kagi 経由のときは、証明書とトークンを扱う通信クライアントを受け取る
+        self._http_client = http_client
         self._client = None
         # パソコンの中の AI では、指定のモデルがなければ入っているモデルを使い、
         # ツールに対応していないモデルなら、ツールなしで答えてもらう。
@@ -163,6 +166,8 @@ class OpenAICompatibleProvider:
             kwargs: dict = {"api_key": self._api_key, "timeout": 90}
             if self._base_url:
                 kwargs["base_url"] = self._base_url
+            if self._http_client is not None:
+                kwargs["http_client"] = self._http_client
             self._client = AsyncOpenAI(**kwargs)
         return self._client
 

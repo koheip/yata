@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import ssl
 from dataclasses import dataclass
 
 from yata.config import Settings, key_ready
+from yata.llm import kagi
 from yata.llm.anthropic_provider import AnthropicProvider
 from yata.llm.demo import DemoProvider
 from yata.llm.gemini_provider import GeminiProvider
@@ -73,6 +75,15 @@ class ModelRouter:
             ),
             *self._cloud_models(),
             ModelInfo(
+                id="kagi",
+                label="kagi 経由（キーをヤタに置かない）",
+                provider="kagi",
+                upstream_model=self.settings.kagi_model,
+                ready=self._kagi_ready(),
+                note=None if self._kagi_ready()
+                else "KAGI_URL・KAGI_CA_FILE・KAGI_CERT_FILE・KAGI_KEY_FILE を .env に設定してください。",
+            ),
+            ModelInfo(
                 id="ollama",
                 label="Ollama",
                 provider="パソコンの中",
@@ -119,6 +130,34 @@ class ModelRouter:
                 note=None if ready else f"設定画面の「AI をつなぐ」で {item.label} のキーを入れてください。",
             ))
         return models
+
+    def _kagi_ready(self) -> bool:
+        s = self.settings
+        return all((value or "").strip() for value in (s.kagi_url, s.kagi_ca_file, s.kagi_cert_file, s.kagi_key_file))
+
+    def _kagi_provider(self) -> OpenAICompatibleProvider:
+        s = self.settings
+        url = (s.kagi_url or "").strip().rstrip("/")
+        upstream = s.kagi_upstream.strip()
+        if not url.startswith("https://"):
+            raise ProviderError("KAGI_URL は https:// で始まる必要があります。", provider="kagi")
+        if not kagi.valid_upstream(upstream):
+            raise ProviderError("KAGI_UPSTREAM には、kagi のポリシーにある上流の名前（英小文字・数字・-）を入れてください。",
+                                provider="kagi")
+        try:
+            client = kagi.kagi_http_client(
+                broker_url=url, upstream=upstream, ttl=s.kagi_token_ttl,
+                ca_file=s.kagi_ca_file or "", cert_file=s.kagi_cert_file or "", key_file=s.kagi_key_file or "",
+            )
+        except (OSError, ssl.SSLError) as exc:
+            raise ProviderError(f"kagi の証明書を読み込めませんでした。ファイルの場所を確認してください（{exc.__class__.__name__}）。",
+                                provider="kagi") from exc
+        return OpenAICompatibleProvider(
+            api_key="kagi-managed",  # 実際にはリクエストごとに kagi のトークンで置きかわる
+            base_url=f"{url}/v1/proxy/{upstream}/v1",
+            provider_name="kagi",
+            http_client=client,
+        )
 
     def is_local(self, model_id: str) -> bool:
         return model_id in LOCAL_IDS
@@ -174,6 +213,8 @@ class ModelRouter:
             ), info.upstream_model
         if model_id == "anthropic":
             return AnthropicProvider(api_key=self.settings.anthropic_api_key or ""), info.upstream_model
+        if model_id == "kagi":
+            return self._kagi_provider(), info.upstream_model
         if model_id == "ollama":
             return OpenAICompatibleProvider(
                 api_key="ollama",

@@ -72,6 +72,15 @@ class Settings(BaseSettings):
     custom_llm_base_url: str | None = None
     custom_llm_api_key: str | None = None
     custom_llm_model: str | None = None
+    # kagi（AI エージェント用のシークレット・ブローカー）を通して LLM を呼ぶ。ヤタには本物のキーを置かない。
+    # URL・CA・証明書・秘密鍵の4つがそろうと、モデル一覧に「kagi 経由」が出る。
+    kagi_url: str | None = None
+    kagi_upstream: str = "openai"
+    kagi_model: str = "gpt-4o-mini"
+    kagi_ca_file: str | None = None
+    kagi_cert_file: str | None = None
+    kagi_key_file: str | None = None
+    kagi_token_ttl: str = "10m"
     # パソコンの中の AI には、ブラウザ操作のツールを渡さない（小さいモデルが迷わないように）。
     yata_local_browser_tools: bool = False
     # 完全オフライン。パソコンの中の AI だけを使い、ネット検索・ページ取得・ブラウザ・外部の連携を止める。
